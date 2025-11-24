@@ -7,18 +7,26 @@
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "firebase": "^12.5.0",
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^6.6.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.541.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-scripts": "5.0.1",
+    "resend": "^6.4.2",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build", 
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "functions:dev": "firebase emulators:start --only functions",
+    "functions:deploy": "firebase deploy --only functions",
+    "deploy": "npm run build && firebase deploy",
+    "dev:full": "firebase emulators:start"
   },
   "eslintConfig": {
     "extends": [

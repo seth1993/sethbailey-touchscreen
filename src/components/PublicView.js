@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, ExternalLink, TrendingUp, Users, FileText, X, Calendar, Target, Mail, MessageSquare, Code, Zap, Send, CheckCircle, XCircle } from "lucide-react";
+import { FolderKanban, ExternalLink, TrendingUp, Users, FileText, X, Calendar, Target, Code, Zap, Send } from "lucide-react";
 import plane from '../plane.png';
 import { analytics } from '../firebase';
 import { logEvent } from 'firebase/analytics';
@@ -13,38 +13,12 @@ const SethBaileyIcon = ({ className = "w-8 h-8" }) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    {/* Outer ring */}
-    <circle
-      cx="20"
-      cy="20"
-      r="18"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-    {/* Inner geometric design */}
-    <path
-      d="M12 15L20 8L28 15L25 20L20 25L15 20Z"
-      fill="currentColor"
-      opacity="0.8"
-    />
-    {/* Accent lines */}
-    <path
-      d="M8 20H14M26 20H32M20 8V14M20 26V32"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    {/* Center dot */}
+    <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="2" fill="none" />
+    <path d="M12 15L20 8L28 15L25 20L20 25L15 20Z" fill="currentColor" opacity="0.8" />
+    <path d="M8 20H14M26 20H32M20 8V14M20 26V32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     <circle cx="20" cy="20" r="2" fill="currentColor" />
   </svg>
 );
-
-// --- Tweak these if you want different sizing ---
-const TILE_WIDTH = 500;  // px
-const TILE_HEIGHT = 300; // px
-
-// Demo data — replace with your real projects
 
 const projects = [
     {
@@ -161,49 +135,11 @@ const projects = [
             monthlyGoal: "1.5K visitors"
         }
     },
-    {
-        id: 7,
-        name: "Rule Your Kingdom",
-        summary: "Comprehensive kingdom management and strategy platform.",
-        owner: "Research",
-        image: "/ruleyourkingdom.png",
-        metrics: {
-            monthlyTraffic: "4.2K",
-            conversionRate: "3.9%",
-            contentPieces: 18
-        },
-        details: {
-            lastCampaign: "Strategy Game Mechanics",
-            topContent: "Kingdom Building Guide",
-            nextPost: "Saturday 7PM",
-            platforms: ["Reddit", "Discord", "YouTube", "Gaming Blogs"],
-            monthlyGoal: "6K visitors"
-        }
-    },
-    {
-        id: 8,
-        name: "AI Customer Service",
-        summary: "Intelligent customer support automation with natural language processing.",
-        owner: "AI",
-        image: "/logo512.png",
-        metrics: {
-            monthlyTraffic: "1.5K",
-            conversionRate: "4.4%",
-            contentPieces: 10
-        },
-        details: {
-            lastCampaign: "AI Support Revolution",
-            topContent: "Chatbot Implementation Guide",
-            nextPost: "Tuesday 3PM",
-            platforms: ["LinkedIn", "AI Communities", "Medium", "Twitter"],
-            monthlyGoal: "3K visitors"
-        }
-    },
 ];
 
-export default function Tiles() {
+const PublicView = ({ onSignIn }) => {
   const [selectedProject, setSelectedProject] = useState(null);
-  
+
   const scrollToSection = (e, sectionId) => {
     e.preventDefault();
     
@@ -220,7 +156,7 @@ export default function Tiles() {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
-  
+
   return (
     <div className="min-h-screen w-full bg-neutral-100 text-neutral-900">
       <header className="sticky top-0 z-20 bg-neutral-100/80 backdrop-blur border-b border-neutral-200">
@@ -231,7 +167,7 @@ export default function Tiles() {
               SETH BAILEY
             </h1>
           </div>
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="flex items-center space-x-8">
             <a 
               href="#projects" 
               className="text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
@@ -246,6 +182,12 @@ export default function Tiles() {
             >
               CONTACT
             </a>
+            <button
+              onClick={onSignIn}
+              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors"
+            >
+              SIGN IN
+            </button>
           </nav>
         </div>
       </header>
@@ -278,28 +220,15 @@ export default function Tiles() {
       </div>
 
       <main id="projects" className="mx-auto max-w-[1600px] px-4 sm:px-6 py-8">
-        {/*
-          Responsive grid: 1 column on mobile, 2 on tablet, 3+ on desktop
-          Cards take full width on mobile with some padding
-        */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {projects.map((p) => (
-            <Tile 
-              key={p.id} 
-              project={p} 
-              onClick={() => {
-                // Track project tile clicks
-                if (analytics) {
-                  logEvent(analytics, 'project_tile_click', {
-                    project_name: p.name,
-                    project_id: p.id,
-                    project_owner: p.owner
-                  });
-                }
-                setSelectedProject(p);
-              }} 
-            />)
-          )}
+        <div className="space-y-6">
+          {projects.map((project, index) => (
+            <FullWidthTile 
+              key={project.id} 
+              project={project}
+              isReversed={index % 2 === 1}
+              onClick={() => setSelectedProject(project)}
+            />
+          ))}
         </div>
       </main>
       
@@ -322,78 +251,75 @@ export default function Tiles() {
       </AnimatePresence>
     </div>
   );
-}
+};
 
-function Tile({ project, onClick }) {
+function FullWidthTile({ project, isReversed, onClick }) {
   return (
     <motion.div
-      className="group relative cursor-pointer rounded-2xl shadow-lg ring-1 ring-black/5 h-72 sm:h-80 md:h-72 lg:h-80"
-      initial={{ scale: 1 }}
-      whileHover={{ scale: 1.03 }}
+      className="group cursor-pointer rounded-2xl shadow-lg ring-1 ring-black/5 overflow-hidden bg-white hover:shadow-xl transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.01 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
       onClick={onClick}
     >
-      {/* Background image */}
-      {project.image && (
-        <div className="absolute inset-0 rounded-2xl overflow-hidden">
-          <img 
-            src={project.image} 
-            alt={project.name}
-            className="w-full h-full object-cover"
-          />
+      <div className={`flex ${isReversed ? 'flex-row-reverse' : 'flex-row'} items-stretch`}>
+        {/* Image Side */}
+        <div className="w-1/2 relative overflow-hidden">
+          {project.image && (
+            <img 
+              src={project.image} 
+              alt={project.name}
+              className="w-full h-full object-cover min-h-[300px]"
+            />
+          )}
+          <div className="absolute inset-0 bg-black/20" />
         </div>
-      )}
-      
-      {/* Black overlay for readability */}
-      <div className="absolute inset-0 bg-black/70 rounded-2xl" />
-
-      {/* Subtle glow on hover */}
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.08), 0 10px 30px rgba(0,0,0,0.45)" }} />
-
-      <div className="relative z-10 h-full p-6 flex flex-col justify-between text-white">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-white/10">
-            <FolderKanban className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">{project.name}</h2>
-            <p className="text-xs uppercase tracking-wider text-white/60">{project.owner}</p>
-          </div>
-        </div>
-
-        <p className="mt-4 text-white/90 max-w-[46ch] leading-snug">
-          {project.summary}
-        </p>
-
-        {/* Marketing Metrics */}
-        <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-          <div className="bg-white/10 rounded-lg p-2">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingUp className="h-3 w-3" />
-              <span className="text-xs text-white/70">Traffic</span>
+        
+        {/* Content Side */}
+        <div className="w-1/2 p-8 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-xl bg-gray-100">
+              <FolderKanban className="h-6 w-6 text-gray-700" />
             </div>
-            <div className="text-sm font-semibold">{project.metrics.monthlyTraffic}</div>
-          </div>
-          <div className="bg-white/10 rounded-lg p-2">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Users className="h-3 w-3" />
-              <span className="text-xs text-white/70">CVR</span>
+            <div>
+              <h2 className="text-3xl font-semibold tracking-tight text-gray-900">{project.name}</h2>
+              <p className="text-sm uppercase tracking-wider text-gray-500">{project.owner}</p>
             </div>
-            <div className="text-sm font-semibold">{project.metrics.conversionRate}</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-2">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <FileText className="h-3 w-3" />
-              <span className="text-xs text-white/70">Content</span>
-            </div>
-            <div className="text-sm font-semibold">{project.metrics.contentPieces}</div>
-          </div>
-        </div>
 
-        <div className="mt-4 flex items-center justify-between text-sm">
-          <span className="text-white/70">Click for details</span>
-          <div className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-white">
-            View <ExternalLink className="h-3 w-3" />
+          <p className="text-gray-700 text-lg leading-relaxed mb-6">
+            {project.summary}
+          </p>
+
+          {/* Marketing Metrics */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+                <span className="text-xs text-gray-600">Traffic</span>
+              </div>
+              <div className="text-xl font-semibold text-gray-900">{project.metrics.monthlyTraffic}</div>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Users className="h-4 w-4 text-green-600" />
+                <span className="text-xs text-gray-600">CVR</span>
+              </div>
+              <div className="text-xl font-semibold text-gray-900">{project.metrics.conversionRate}</div>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <FileText className="h-4 w-4 text-purple-600" />
+                <span className="text-xs text-gray-600">Content</span>
+              </div>
+              <div className="text-xl font-semibold text-gray-900">{project.metrics.contentPieces}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end text-sm text-gray-600 group-hover:text-gray-900">
+            <span className="mr-2">View Details</span>
+            <ExternalLink className="h-4 w-4" />
           </div>
         </div>
       </div>
@@ -417,7 +343,6 @@ function ProjectDetailModal({ project, onClose }) {
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="relative">
           {project.image && (
             <div className="h-48 overflow-hidden rounded-t-2xl">
@@ -443,7 +368,6 @@ function ProjectDetailModal({ project, onClose }) {
         </div>
 
         <div className="p-6">
-          {/* Key Metrics */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 bg-blue-50 rounded-xl">
               <TrendingUp className="h-8 w-8 text-blue-600 mx-auto mb-2" />
@@ -462,7 +386,6 @@ function ProjectDetailModal({ project, onClose }) {
             </div>
           </div>
 
-          {/* Content Details */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Calendar className="h-5 w-5 text-gray-600" />
@@ -497,11 +420,6 @@ function ProjectDetailModal({ project, onClose }) {
                   </span>
                 ))}
               </div>
-            </div>
-
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="font-medium text-gray-900 mb-2">Recent Campaign</div>
-              <div className="text-sm text-gray-600">{project.details.lastCampaign}</div>
             </div>
           </div>
         </div>
@@ -1002,3 +920,5 @@ function Footer({ scrollToSection }) {
     </footer>
   );
 }
+
+export default PublicView;
