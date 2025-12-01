@@ -74,14 +74,14 @@ function App() {
     if (showPublicView) {
       return (
         <div className="App">
-          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-8 py-3">
+          <div className="bg-gray-800/95 border-b border-gray-700 px-8 py-3 backdrop-blur-sm">
             <div className="max-w-[1600px] mx-auto flex justify-between items-center">
-              <p className="text-yellow-400 text-sm">
-                👁️ Viewing as public visitor
+              <p className="text-gray-300 text-sm flex items-center gap-2">
+                <span className="text-blue-400">👁️</span> Viewing as public visitor
               </p>
               <button
                 onClick={toggleView}
-                className="text-sm text-yellow-400 hover:text-yellow-300 underline"
+                className="text-sm text-blue-400 hover:text-blue-300 underline transition-colors"
               >
                 Back to Dashboard
               </button>

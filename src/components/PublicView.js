@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, ExternalLink, TrendingUp, Users, FileText, X, Calendar, Target, Code, Zap, Send } from "lucide-react";
+import { FolderKanban, Code, Zap, Send, Users, TrendingUp, Menu, X } from "lucide-react";
 import plane from '../plane.png';
 import { analytics } from '../firebase';
 import { logEvent } from 'firebase/analytics';
@@ -25,6 +25,7 @@ const projects = [
         id: 1,
         name: "Strike Fusion",
         summary: "Revolutionary fusion technology for modern applications.",
+        description: "Strike Fusion represents the next generation of application development, combining cutting-edge technology with intuitive design. This platform enables teams to build and deploy scalable solutions with unprecedented speed and efficiency. By leveraging modern frameworks and cloud infrastructure, Strike Fusion transforms complex development challenges into streamlined workflows that deliver real business value.",
         owner: "Design",
         image: "/strike.png",
         metrics: {
@@ -44,6 +45,7 @@ const projects = [
         id: 2,
         name: "AI Bid",
         summary: "Intelligent bidding platform powered by machine learning.",
+        description: "AI Bid revolutionizes the construction bidding process through advanced machine learning algorithms and intelligent automation. The platform analyzes historical data, market trends, and project specifications to generate accurate, competitive bids in minutes rather than days. Construction teams can focus on what they do best while AI Bid handles the complex calculations and optimizations that maximize profitability and win rates.",
         owner: "Build",
         image: "/bidfolder.png",
         metrics: {
@@ -63,6 +65,7 @@ const projects = [
         id: 3,
         name: "PM XL",
         summary: "Advanced project management and forecasting tools.",
+        description: "PM XL is a comprehensive project management solution designed for teams that demand precision and insight. With powerful forecasting capabilities, real-time collaboration features, and intelligent resource allocation, PM XL helps organizations deliver projects on time and under budget. The platform integrates seamlessly with existing workflows while providing the analytics and reporting needed to make data-driven decisions.",
         owner: "Research",
         image: "/pmxl.png",
         metrics: {
@@ -82,6 +85,7 @@ const projects = [
         id: 4,
         name: "Pull Plan App",
         summary: "Streamlined construction scheduling and planning application.",
+        description: "Pull Plan App brings collaborative scheduling to construction teams with an intuitive, visual planning interface. Based on lean construction principles, this tool enables teams to create, share, and update project schedules in real-time. The result is better coordination, fewer delays, and improved project outcomes through enhanced communication and transparency across all stakeholders.",
         owner: "Ops",
         image: "/tobysquish.png",
         metrics: {
@@ -101,6 +105,7 @@ const projects = [
         id: 5,
         name: "Tiktok Store",
         summary: "Social commerce platform for the next generation.",
+        description: "TikTok Store harnesses the power of social media to create seamless shopping experiences. By integrating directly with TikTok's massive user base, merchants can showcase products, engage with customers, and drive sales through authentic, engaging content. The platform combines entertainment with commerce, making shopping fun and accessible while providing powerful analytics to optimize performance.",
         owner: "Design",
         image: "/waimeavalley.jpg",
         metrics: {
@@ -120,6 +125,7 @@ const projects = [
         id: 6,
         name: "AEM consulting",
         summary: "Adobe Experience Manager implementation and optimization.",
+        description: "Our AEM consulting services help enterprises maximize their investment in Adobe Experience Manager. From initial implementation to ongoing optimization, we provide expert guidance on content strategy, architecture design, and performance tuning. Our team ensures your digital experiences are not only beautiful and engaging but also scalable, maintainable, and aligned with your business objectives.",
         owner: "Build",
         image: "/aemconsult.png",
         metrics: {
@@ -138,7 +144,7 @@ const projects = [
 ];
 
 const PublicView = ({ onSignIn }) => {
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const scrollToSection = (e, sectionId) => {
     e.preventDefault();
@@ -155,41 +161,94 @@ const PublicView = ({ onSignIn }) => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+    
+    // Close mobile menu after navigation
+    setMobileMenuOpen(false);
   };
 
   return (
-    <div className="min-h-screen w-full bg-neutral-100 text-neutral-900">
-      <header className="sticky top-0 z-20 bg-neutral-100/80 backdrop-blur border-b border-neutral-200">
+    <div className="min-h-screen w-full bg-black text-white">
+      <header className="sticky top-0 z-20 bg-black/80 backdrop-blur border-b border-gray-800">
         <div className="mx-auto max-w-[1600px] px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <SethBaileyIcon className="w-10 h-10 text-gray-800" />
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight lettering-wide">
+            <SethBaileyIcon className="w-10 h-10 text-white" />
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight lettering-wide">
               SETH BAILEY
             </h1>
           </div>
-          <nav className="flex items-center space-x-8">
+          
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
             <a 
               href="#projects" 
-              className="text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+              className="text-gray-300 hover:text-white transition-colors cursor-pointer"
               onClick={(e) => scrollToSection(e, 'projects')}
             >
               PROJECTS
             </a>
             <a 
               href="#contact" 
-              className="text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+              className="text-gray-300 hover:text-white transition-colors cursor-pointer"
               onClick={(e) => scrollToSection(e, 'contact')}
             >
               CONTACT
             </a>
             <button
               onClick={onSignIn}
-              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               SIGN IN
             </button>
           </nav>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 text-white hover:text-gray-300 transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden border-t border-gray-800 bg-black/95 backdrop-blur"
+            >
+              <nav className="flex flex-col px-6 py-4 space-y-4">
+                <a 
+                  href="#projects" 
+                  className="text-gray-300 hover:text-white transition-colors cursor-pointer py-2 text-lg"
+                  onClick={(e) => scrollToSection(e, 'projects')}
+                >
+                  PROJECTS
+                </a>
+                <a 
+                  href="#contact" 
+                  className="text-gray-300 hover:text-white transition-colors cursor-pointer py-2 text-lg"
+                  onClick={(e) => scrollToSection(e, 'contact')}
+                >
+                  CONTACT
+                </a>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onSignIn();
+                  }}
+                  className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-left text-lg font-semibold"
+                >
+                  SIGN IN
+                </button>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
       
       {/* Header Image Section */}
@@ -219,14 +278,13 @@ const PublicView = ({ onSignIn }) => {
         </div>
       </div>
 
-      <main id="projects" className="mx-auto max-w-[1600px] px-4 sm:px-6 py-8">
+      <main id="projects" className="mx-auto max-w-[1600px] px-4 sm:px-6 py-8 bg-black">
         <div className="space-y-6">
           {projects.map((project, index) => (
             <FullWidthTile 
               key={project.id} 
               project={project}
               isReversed={index % 2 === 1}
-              onClick={() => setSelectedProject(project)}
             />
           ))}
         </div>
@@ -239,191 +297,81 @@ const PublicView = ({ onSignIn }) => {
       
       {/* Footer */}
       <Footer scrollToSection={scrollToSection} />
-      
-      {/* Detailed View Modal */}
-      <AnimatePresence>
-        {selectedProject && (
-          <ProjectDetailModal 
-            project={selectedProject} 
-            onClose={() => setSelectedProject(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
 
-function FullWidthTile({ project, isReversed, onClick }) {
+function FullWidthTile({ project, isReversed }) {
   return (
     <motion.div
-      className="group cursor-pointer rounded-2xl shadow-lg ring-1 ring-black/5 overflow-hidden bg-white hover:shadow-xl transition-shadow"
+      className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.01 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      onClick={onClick}
     >
-      <div className={`flex ${isReversed ? 'flex-row-reverse' : 'flex-row'} items-stretch`}>
-        {/* Image Side */}
-        <div className="w-1/2 relative overflow-hidden">
+      <div className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-stretch min-h-[500px]`}>
+        {/* Image Side with Fade Overlay */}
+        <div className="w-full lg:w-1/2 relative overflow-hidden min-h-[300px] lg:min-h-[500px]">
           {project.image && (
-            <img 
-              src={project.image} 
-              alt={project.name}
-              className="w-full h-full object-cover min-h-[300px]"
-            />
-          )}
-          <div className="absolute inset-0 bg-black/20" />
-        </div>
-        
-        {/* Content Side */}
-        <div className="w-1/2 p-8 flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-xl bg-gray-100">
-              <FolderKanban className="h-6 w-6 text-gray-700" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-semibold tracking-tight text-gray-900">{project.name}</h2>
-              <p className="text-sm uppercase tracking-wider text-gray-500">{project.owner}</p>
-            </div>
-          </div>
-
-          <p className="text-gray-700 text-lg leading-relaxed mb-6">
-            {project.summary}
-          </p>
-
-          {/* Marketing Metrics */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-                <span className="text-xs text-gray-600">Traffic</span>
-              </div>
-              <div className="text-xl font-semibold text-gray-900">{project.metrics.monthlyTraffic}</div>
-            </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Users className="h-4 w-4 text-green-600" />
-                <span className="text-xs text-gray-600">CVR</span>
-              </div>
-              <div className="text-xl font-semibold text-gray-900">{project.metrics.conversionRate}</div>
-            </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <FileText className="h-4 w-4 text-purple-600" />
-                <span className="text-xs text-gray-600">Content</span>
-              </div>
-              <div className="text-xl font-semibold text-gray-900">{project.metrics.contentPieces}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end text-sm text-gray-600 group-hover:text-gray-900">
-            <span className="mr-2">View Details</span>
-            <ExternalLink className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function ProjectDetailModal({ project, onClose }) {
-  return (
-    <motion.div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
-      <motion.div
-        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative">
-          {project.image && (
-            <div className="h-48 overflow-hidden rounded-t-2xl">
+            <>
               <img 
                 src={project.image} 
                 alt={project.name}
                 className="w-full h-full object-cover"
               />
-            </div>
+              {/* Strong Fade to Content Side - Only on Desktop */}
+              <div className={`absolute inset-0 hidden lg:block bg-gradient-to-${isReversed ? 'l' : 'r'} from-transparent via-gray-900/60 to-gray-900`} />
+              {/* Dark overlay for mobile */}
+              <div className="absolute inset-0 lg:hidden bg-black/30" />
+            </>
           )}
-          <div className="absolute top-4 right-4">
-            <button
-              onClick={onClose}
-              className="bg-black/20 backdrop-blur-sm rounded-full p-2 text-white hover:bg-black/30 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
-            <h1 className="text-3xl font-bold text-white mb-2">{project.name}</h1>
-            <p className="text-white/80">{project.summary}</p>
-          </div>
         </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <TrendingUp className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">{project.metrics.monthlyTraffic}</div>
-              <div className="text-sm text-gray-600">Monthly Traffic</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-xl">
-              <Users className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">{project.metrics.conversionRate}</div>
-              <div className="text-sm text-gray-600">Conversion Rate</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-xl">
-              <FileText className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">{project.metrics.contentPieces}</div>
-              <div className="text-sm text-gray-600">Content Pieces</div>
-            </div>
+        
+        {/* Content Side */}
+        <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-gray-900 to-gray-800 relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)`
+            }}></div>
           </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <Calendar className="h-5 w-5 text-gray-600" />
+          
+          <div className="relative z-10">
+            {/* Header with Icon */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="p-3 bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30">
+                <FolderKanban className="h-5 w-5 lg:h-6 lg:w-6 text-blue-400" />
+              </div>
               <div>
-                <div className="font-medium text-gray-900">Next Scheduled Post</div>
-                <div className="text-sm text-gray-600">{project.details.nextPost}</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <Target className="h-5 w-5 text-gray-600" />
-              <div>
-                <div className="font-medium text-gray-900">Monthly Goal</div>
-                <div className="text-sm text-gray-600">{project.details.monthlyGoal}</div>
+                <h2 className="text-2xl lg:text-4xl font-bold tracking-tight text-white mb-2">{project.name}</h2>
+                <div className="flex items-center gap-2">
+                  <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                  <p className="text-xs lg:text-sm uppercase tracking-widest text-gray-400">{project.owner}</p>
+                </div>
               </div>
             </div>
 
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="font-medium text-gray-900 mb-2">Top Performing Content</div>
-              <div className="text-sm text-gray-600">{project.details.topContent}</div>
-            </div>
+            {/* Summary */}
+            <p className="text-lg lg:text-xl text-gray-300 leading-relaxed mb-4 font-medium">
+              {project.summary}
+            </p>
 
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="font-medium text-gray-900 mb-2">Active Platforms</div>
-              <div className="flex flex-wrap gap-2">
-                {project.details.platforms.map((platform, index) => (
-                  <span 
-                    key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                  >
-                    {platform}
-                  </span>
-                ))}
-              </div>
+            {/* Extended Description */}
+            <p className="text-sm lg:text-base text-gray-400 leading-relaxed mb-6 lg:mb-8">
+              {project.description}
+            </p>
+
+            {/* CTA Button */}
+            <div>
+              <button className="inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm lg:text-base font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
+                <span>Visit Site</span>
+                <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
