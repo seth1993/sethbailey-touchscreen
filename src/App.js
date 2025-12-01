@@ -70,6 +70,19 @@ function App() {
 
   // If user is logged in
   if (user) {
+    // Check if user is authorized (only sethb23c@gmail.com)
+    const isAuthorized = user.email === 'sethb23c@gmail.com';
+    
+    if (!isAuthorized) {
+      // If user is not authorized, sign them out and show public view
+      handleLogout();
+      return (
+        <div className="App">
+          <PublicView onSignIn={() => setShowAuthForm(true)} />
+        </div>
+      );
+    }
+    
     // Show public view if toggled, otherwise show logged in view
     if (showPublicView) {
       return (

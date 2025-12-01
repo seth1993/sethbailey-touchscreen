@@ -1,0 +1,12 @@
+Please save the F-35 fighter jet top-view image as:
+f35-logo.png
+
+This file should be placed in this same directory (public folder).
+
+The image will be used for:
+- Logo in the header
+- Logo in the hero section
+- Favicon (browser tab icon)
+- PWA icons
+
+Once saved, delete this instruction file.
