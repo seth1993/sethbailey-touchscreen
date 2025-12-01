@@ -86,22 +86,22 @@ const projects = [
   },
   {
     id: 4,
-    name: "Pull Plan App",
-    summary: "Streamlined construction scheduling and planning application.",
-    description: "Pull Plan App brings collaborative scheduling to construction teams with an intuitive, visual planning interface. Based on lean construction principles, this tool enables teams to create, share, and update project schedules in real-time. The result is better coordination, fewer delays, and improved project outcomes through enhanced communication and transparency across all stakeholders.",
+    name: "Planful",
+    summary: "Dream it. Plan it. Do it.",
+    description: "Planful transforms dreams into achievable goals through strategic planning and purposeful action. This comprehensive planning platform provides personalized resources, motivational content, and practical tools to help individuals and professionals navigate their unique journeys. With features like the 90-day planning system, journal integration, and goal-tracking resources, Planful empowers users to turn aspirations into reality through thoughtful, structured planning.",
     owner: "Ops",
-    image: "/waimeavalley.jpg",
-    url: "https://pullplan.app",
+    image: "/planful.png",
+    url: "https://planful.app",
     metrics: {
       monthlyTraffic: "1.2K",
       conversionRate: "5.1%",
       contentPieces: 6
     },
     details: {
-      lastCampaign: "Construction Planning 101",
-      topContent: "Scheduling Tutorial Video",
+      lastCampaign: "90 Day Goal Setting",
+      topContent: "Dream to Action Guide",
       nextPost: "Wednesday 1PM",
-      platforms: ["YouTube", "Construction Forums", "Instagram"],
+      platforms: ["Instagram", "X", "Resources Blog"],
       monthlyGoal: "2K visitors"
     }
   },
