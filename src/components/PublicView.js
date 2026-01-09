@@ -24,8 +24,8 @@ const projects = [
   {
     id: 1,
     name: "Strike Fusion",
-    summary: "Revolutionary fusion technology for modern applications.",
-    description: "Strike Fusion represents the next generation of application development, combining cutting-edge technology with intuitive design. This platform enables teams to build and deploy scalable solutions with unprecedented speed and efficiency. By leveraging modern frameworks and cloud infrastructure, Strike Fusion transforms complex development challenges into streamlined workflows that deliver real business value.",
+    summary: "Precision cost forecasting for construction projects.",
+    description: "Strike Fusion delivers accurate cost forecasting and budget management for construction projects of any scale. By analyzing historical data, material costs, labor trends, and project specifications, the platform provides real-time insights that help contractors and project managers forecast costs with confidence. From initial estimates to project completion, Strike Fusion keeps your construction jobs on budget and profitable, turning complex forecasting challenges into clear, actionable financial intelligence.",
     owner: "Design",
     image: "/strike.png",
     url: "https://fusion.strikeusa.com",
@@ -538,7 +538,7 @@ function ContactSection() {
             className="text-white"
           >
             <motion.h2
-              className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
+              className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent leading-tight pb-2"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}

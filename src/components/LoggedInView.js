@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Eye,
@@ -9,9 +9,25 @@ import {
   Activity,
   CheckCircle2,
   Sparkles,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Save,
 } from "lucide-react";
 import Tiles from "./tiles";
 import inspirationImage from "../inspiration.png";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  orderBy,
+} from "firebase/firestore";
 
 const LoggedInView = ({
   onLogout,
@@ -19,6 +35,126 @@ const LoggedInView = ({
   showPublicView,
   highImpactSummary,
 }) => {
+  // State for managing items
+  const [projectItems, setProjectItems] = useState({
+    bidfolder: [],
+    planful: [],
+    fusion: [],
+  });
+  const [editingItem, setEditingItem] = useState(null);
+  const [addingToProject, setAddingToProject] = useState(null);
+  const [newItemText, setNewItemText] = useState("");
+  const [editItemText, setEditItemText] = useState("");
+
+  // Load items from Firestore on mount
+  useEffect(() => {
+    loadItemsFromFirestore();
+  }, []);
+
+  const loadItemsFromFirestore = async () => {
+    try {
+      const itemsQuery = query(
+        collection(db, "projectItems"),
+        orderBy("createdAt", "asc")
+      );
+      const querySnapshot = await getDocs(itemsQuery);
+      const items = { bidfolder: [], planful: [], fusion: [] };
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (items[data.projectId]) {
+          items[data.projectId].push({ id: doc.id, ...data });
+        }
+      });
+
+      setProjectItems(items);
+    } catch (error) {
+      console.error("Error loading items:", error);
+    }
+  };
+
+  const handleAddItem = async (projectId) => {
+    if (!newItemText.trim()) return;
+
+    try {
+      const docRef = await addDoc(collection(db, "projectItems"), {
+        projectId,
+        text: newItemText.trim(),
+        createdAt: new Date().toISOString(),
+      });
+
+      setProjectItems((prev) => ({
+        ...prev,
+        [projectId]: [
+          ...prev[projectId],
+          { id: docRef.id, projectId, text: newItemText.trim() },
+        ],
+      }));
+
+      setNewItemText("");
+      setAddingToProject(null);
+    } catch (error) {
+      console.error("Error adding item:", error);
+    }
+  };
+
+  const handleEditItem = async (itemId, projectId) => {
+    if (!editItemText.trim()) return;
+
+    try {
+      const itemRef = doc(db, "projectItems", itemId);
+      await updateDoc(itemRef, {
+        text: editItemText.trim(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      setProjectItems((prev) => ({
+        ...prev,
+        [projectId]: prev[projectId].map((item) =>
+          item.id === itemId ? { ...item, text: editItemText.trim() } : item
+        ),
+      }));
+
+      setEditingItem(null);
+      setEditItemText("");
+    } catch (error) {
+      console.error("Error editing item:", error);
+    }
+  };
+
+  const handleDeleteItem = async (itemId, projectId) => {
+    try {
+      await deleteDoc(doc(db, "projectItems", itemId));
+
+      setProjectItems((prev) => ({
+        ...prev,
+        [projectId]: prev[projectId].filter((item) => item.id !== itemId),
+      }));
+    } catch (error) {
+      console.error("Error deleting item:", error);
+    }
+  };
+
+  const startEditing = (item, projectId) => {
+    setEditingItem({ id: item.id, projectId });
+    setEditItemText(item.text);
+  };
+
+  const cancelEditing = () => {
+    setEditingItem(null);
+    setEditItemText("");
+  };
+
+  const startAdding = (projectId) => {
+    setAddingToProject(projectId);
+    setNewItemText("");
+  };
+
+  const cancelAdding = () => {
+    setAddingToProject(null);
+    setNewItemText("");
+  };
+
   // High-impact summary can come from Linear / API later.
   const totalThisWeek = highImpactSummary?.totalThisWeek ?? 0;
   const weeklyTarget = highImpactSummary?.weeklyTarget ?? 10;
@@ -46,11 +182,6 @@ const LoggedInView = ({
       color: "text-blue-400",
       bg: "bg-blue-500/10",
       description: "Get in front of more bid teams and stay top-of-mind.",
-      items: [
-        "Publish a piece of content (blog, LinkedIn post, or video).",
-        "Add at least one new qualified contact to the bid teams list.",
-        "Send a specialized gift or follow-up to a bid-team decision maker.",
-      ],
     },
     {
       id: "planful",
@@ -59,11 +190,6 @@ const LoggedInView = ({
       color: "text-purple-400",
       bg: "bg-purple-500/10",
       description: "Make it stable and delightful for real users.",
-      items: [
-        "Fix a user-blocking bug that stops someone from using the app.",
-        "Run a user-testing session and capture concrete learnings.",
-        "Ship a UX improvement directly based on user feedback.",
-      ],
     },
     {
       id: "fusion",
@@ -72,11 +198,6 @@ const LoggedInView = ({
       color: "text-green-400",
       bg: "bg-green-500/10",
       description: "Ship the pieces that make weekly project reviews effortless.",
-      items: [
-        "Ship a visible improvement to the Overview page.",
-        "Ship a new metric or card on the Dashboard page.",
-        "Improve weekly emails or the data capture flow end-to-end.",
-      ],
     },
   ];
 
@@ -245,6 +366,7 @@ const LoggedInView = ({
         >
           {projectConfigs.map((project) => {
             const Icon = project.icon;
+            const items = projectItems[project.id] || [];
             return (
               <div
                 key={project.id}
@@ -254,7 +376,7 @@ const LoggedInView = ({
                   <div className={`${project.bg} p-2.5 rounded-xl`}>
                     <Icon className={`w-5 h-5 ${project.color}`} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-lg font-semibold text-white">
                       {project.name}
                     </h3>
@@ -262,17 +384,111 @@ const LoggedInView = ({
                       High-impact this week
                     </p>
                   </div>
+                  <button
+                    onClick={() => startAdding(project.id)}
+                    className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                    title="Add item"
+                  >
+                    <Plus className="w-4 h-4 text-gray-300" />
+                  </button>
                 </div>
                 <p className="text-sm text-gray-400 mb-3">
                   {project.description}
                 </p>
+
+                {/* Add new item form */}
+                {addingToProject === project.id && (
+                  <div className="mb-3 p-3 bg-neutral-800/60 rounded-lg border border-neutral-700">
+                    <textarea
+                      value={newItemText}
+                      onChange={(e) => setNewItemText(e.target.value)}
+                      placeholder="Enter new item..."
+                      className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500"
+                      rows="2"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAddItem(project.id)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded transition-colors"
+                      >
+                        <Save className="w-3 h-3" />
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelAdding}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-white text-sm rounded transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Items list */}
                 <ul className="space-y-2 text-sm text-gray-300 flex-1">
-                  {project.items.map((item) => (
-                    <li key={item} className="flex gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                      <span>{item}</span>
+                  {items.map((item) => (
+                    <li key={item.id} className="group">
+                      {editingItem?.id === item.id ? (
+                        <div className="p-2 bg-neutral-800/60 rounded-lg border border-neutral-700">
+                          <textarea
+                            value={editItemText}
+                            onChange={(e) => setEditItemText(e.target.value)}
+                            className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500"
+                            rows="2"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() =>
+                                handleEditItem(item.id, project.id)
+                              }
+                              className="flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded transition-colors"
+                            >
+                              <Save className="w-3 h-3" />
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="flex items-center gap-1 px-2 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-xs rounded transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 items-start">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                          <span className="flex-1">{item.text}</span>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => startEditing(item, project.id)}
+                              className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3 h-3 text-blue-400" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDeleteItem(item.id, project.id)
+                              }
+                              className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3 text-red-400" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   ))}
+                  {items.length === 0 && addingToProject !== project.id && (
+                    <li className="text-gray-500 italic text-center py-4">
+                      No items yet. Click + to add one.
+                    </li>
+                  )}
                 </ul>
               </div>
             );
