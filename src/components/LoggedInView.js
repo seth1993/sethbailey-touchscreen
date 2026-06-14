@@ -14,8 +14,9 @@ import {
   Trash2,
   X,
   Save,
+  DollarSign,
+  ArrowUpRight,
 } from "lucide-react";
-import Tiles from "./tiles";
 import inspirationImage from "../inspiration.png";
 import { db } from "../firebase";
 import {
@@ -25,9 +26,16 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  setDoc,
   query,
   orderBy,
 } from "firebase/firestore";
+
+const currency = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
 
 const LoggedInView = ({
   onLogout,
@@ -46,9 +54,19 @@ const LoggedInView = ({
   const [newItemText, setNewItemText] = useState("");
   const [editItemText, setEditItemText] = useState("");
 
-  // Load items from Firestore on mount
+  // Revenue per project (persisted in Firestore: collection "projectRevenue")
+  const [revenue, setRevenue] = useState({
+    bidfolder: 0,
+    planful: 0,
+    fusion: 0,
+  });
+  const [editingRevenue, setEditingRevenue] = useState(null);
+  const [revenueDraft, setRevenueDraft] = useState("");
+
+  // Load items + revenue from Firestore on mount
   useEffect(() => {
     loadItemsFromFirestore();
+    loadRevenueFromFirestore();
   }, []);
 
   const loadItemsFromFirestore = async () => {
@@ -70,6 +88,47 @@ const LoggedInView = ({
       setProjectItems(items);
     } catch (error) {
       console.error("Error loading items:", error);
+    }
+  };
+
+  const loadRevenueFromFirestore = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "projectRevenue"));
+      const next = { bidfolder: 0, planful: 0, fusion: 0 };
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (docSnap.id in next) {
+          next[docSnap.id] = Number(data.amount) || 0;
+        }
+      });
+      setRevenue(next);
+    } catch (error) {
+      console.error("Error loading revenue:", error);
+    }
+  };
+
+  const startEditingRevenue = (projectId) => {
+    setEditingRevenue(projectId);
+    setRevenueDraft(String(revenue[projectId] ?? 0));
+  };
+
+  const cancelEditingRevenue = () => {
+    setEditingRevenue(null);
+    setRevenueDraft("");
+  };
+
+  const handleSaveRevenue = async (projectId) => {
+    const amount = Math.max(0, Math.round(Number(revenueDraft) || 0));
+    try {
+      await setDoc(doc(db, "projectRevenue", projectId), {
+        amount,
+        updatedAt: new Date().toISOString(),
+      });
+      setRevenue((prev) => ({ ...prev, [projectId]: amount }));
+      setEditingRevenue(null);
+      setRevenueDraft("");
+    } catch (error) {
+      console.error("Error saving revenue:", error);
     }
   };
 
@@ -179,70 +238,240 @@ const LoggedInView = ({
       id: "bidfolder",
       name: "Bidfolder",
       icon: TrendingUp,
-      color: "text-blue-400",
-      bg: "bg-blue-500/10",
+      color: "text-sky-300",
+      bg: "bg-sky-500/10",
+      gradient: "from-sky-500 to-cyan-400",
+      glow: "shadow-sky-500/20",
+      ring: "ring-sky-500/30",
       description: "Get in front of more bid teams and stay top-of-mind.",
     },
     {
       id: "planful",
       name: "Planful",
       icon: Target,
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
+      color: "text-violet-300",
+      bg: "bg-violet-500/10",
+      gradient: "from-violet-500 to-fuchsia-400",
+      glow: "shadow-violet-500/20",
+      ring: "ring-violet-500/30",
       description: "Make it stable and delightful for real users.",
     },
     {
       id: "fusion",
       name: "Fusion Project",
       icon: Users,
-      color: "text-green-400",
-      bg: "bg-green-500/10",
-      description: "Ship the pieces that make weekly project reviews effortless.",
+      color: "text-emerald-300",
+      bg: "bg-emerald-500/10",
+      gradient: "from-emerald-500 to-teal-400",
+      glow: "shadow-emerald-500/20",
+      ring: "ring-emerald-500/30",
+      description:
+        "Ship the pieces that make weekly project reviews effortless.",
     },
   ];
 
+  const totalRevenue = projectConfigs.reduce(
+    (sum, p) => sum + (revenue[p.id] || 0),
+    0
+  );
+  const topProject = projectConfigs.reduce(
+    (best, p) => ((revenue[p.id] || 0) > (revenue[best.id] || 0) ? p : best),
+    projectConfigs[0]
+  );
+
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
+      {/* Ambient background glows */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-[40rem] h-[40rem] bg-violet-600/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -right-40 w-[35rem] h-[35rem] bg-sky-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 w-[30rem] h-[30rem] bg-emerald-500/10 rounded-full blur-3xl" />
+      </div>
+
       {/* Header with controls */}
-      <div className="bg-neutral-900/80 backdrop-blur border-b border-neutral-700">
+      <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/[0.03] border-b border-white/10">
         <div className="mx-auto max-w-[1600px] px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl text-white tracking-[0.2em]">
-            DASHBOARD
-          </h1>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-fuchsia-500/30">
+              <Sparkles className="w-5 h-5 text-white" />
+            </span>
+            <h1 className="text-lg font-semibold tracking-tight text-white">
+              Dashboard
+            </h1>
+          </div>
+          <div className="flex gap-3">
             <button
               onClick={onToggleView}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-gray-100 transition-colors"
             >
               <Eye className="w-4 h-4" />
               {showPublicView ? "Back to Dashboard" : "View Public Page"}
             </button>
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/90 hover:bg-red-500 text-sm text-white transition-colors shadow-lg shadow-red-500/20"
             >
               <LogOut className="w-4 h-4" />
               Logout
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main content */}
-      <div className="max-w-[1600px] mx-auto px-6 py-8 space-y-8">
+      <main className="relative z-10 max-w-[1600px] mx-auto px-6 py-8 space-y-8">
+        {/* Revenue overview */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-end justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/30">
+                <DollarSign className="w-6 h-6 text-white" />
+              </span>
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Revenue by Project
+                </h2>
+                <p className="text-sm text-gray-400">
+                  Total earned across every project you're building.
+                </p>
+              </div>
+            </div>
+            <div className="hidden md:flex flex-col items-end">
+              <span className="text-xs uppercase tracking-wider text-gray-500">
+                Total Revenue
+              </span>
+              <span className="text-3xl font-bold bg-gradient-to-r from-emerald-300 to-teal-200 bg-clip-text text-transparent">
+                {currency.format(totalRevenue)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {projectConfigs.map((project) => {
+              const Icon = project.icon;
+              const amount = revenue[project.id] || 0;
+              const share =
+                totalRevenue > 0
+                  ? Math.round((amount / totalRevenue) * 100)
+                  : 0;
+              const isEditing = editingRevenue === project.id;
+              const isTop = project.id === topProject.id && totalRevenue > 0;
+
+              return (
+                <div
+                  key={project.id}
+                  className={`group relative rounded-2xl p-6 bg-white/[0.04] border border-white/10 backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:-translate-y-0.5 hover:shadow-xl ${project.glow}`}
+                >
+                  {/* Accent top bar */}
+                  <div
+                    className={`absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r ${project.gradient}`}
+                  />
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${project.bg} ring-1 ${project.ring}`}
+                      >
+                        <Icon className={`w-5 h-5 ${project.color}`} />
+                      </span>
+                      <div>
+                        <p className="font-semibold text-white leading-tight">
+                          {project.name}
+                        </p>
+                        {isTop && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-300">
+                            <ArrowUpRight className="w-3 h-3" /> Top earner
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {!isEditing && (
+                      <button
+                        onClick={() => startEditingRevenue(project.id)}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Edit revenue"
+                      >
+                        <Edit2 className="w-4 h-4 text-gray-300" />
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div>
+                      <div className="flex items-center gap-2 rounded-xl bg-black/40 border border-white/10 px-3 py-2 focus-within:border-emerald-400/60">
+                        <span className="text-gray-400 text-lg">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="100"
+                          value={revenueDraft}
+                          onChange={(e) => setRevenueDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter")
+                              handleSaveRevenue(project.id);
+                            if (e.key === "Escape") cancelEditingRevenue();
+                          }}
+                          className="w-full bg-transparent text-2xl font-bold text-white outline-none"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => handleSaveRevenue(project.id)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium transition-colors"
+                        >
+                          <Save className="w-3.5 h-3.5" /> Save
+                        </button>
+                        <button
+                          onClick={cancelEditingRevenue}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-200 text-sm transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" /> Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-4xl font-bold tracking-tight text-white">
+                        {currency.format(amount)}
+                      </p>
+                      <div className="mt-4">
+                        <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                          <span>Share of total</span>
+                          <span>{share}%</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${project.gradient} transition-all duration-500`}
+                            style={{ width: `${share}%` }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </motion.section>
+
         {/* High-impact metric + definition + inspiration */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]"
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]"
         >
           {/* High-impact summary */}
-          <div className="bg-neutral-900 rounded-2xl p-6 md:p-8 border border-neutral-800">
+          <div className="rounded-2xl p-6 md:p-8 bg-white/[0.04] border border-white/10 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3 text-left">
-                <div className="bg-emerald-500/20 p-3 rounded-xl">
-                  <Activity className="w-6 h-6 text-emerald-400" />
+                <div className="bg-emerald-500/15 ring-1 ring-emerald-500/30 p-3 rounded-xl">
+                  <Activity className="w-6 h-6 text-emerald-300" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white">
@@ -255,36 +484,41 @@ const LoggedInView = ({
                 </div>
               </div>
               <div className="hidden md:flex flex-col items-end">
-                <span className="text-xs uppercase text-gray-400">
+                <span className="text-xs uppercase tracking-wider text-gray-500">
                   This Week
                 </span>
                 <span className="text-3xl font-semibold text-white">
                   {totalThisWeek}
-                  <span className="text-gray-500 text-lg"> / {weeklyTarget}</span>
+                  <span className="text-gray-500 text-lg">
+                    {" "}
+                    / {weeklyTarget}
+                  </span>
                 </span>
               </div>
             </div>
 
             {/* Mobile metric */}
             <div className="md:hidden flex flex-col gap-1 mb-4">
-              <span className="text-xs uppercase text-gray-400">
+              <span className="text-xs uppercase tracking-wider text-gray-500">
                 This Week
               </span>
               <span className="text-2xl font-semibold text-white">
                 {totalThisWeek}{" "}
-                <span className="text-gray-500 text-base">/ {weeklyTarget}</span>
+                <span className="text-gray-500 text-base">
+                  / {weeklyTarget}
+                </span>
               </span>
             </div>
 
             {/* Progress bar */}
-            <div className="mb-4">
-              <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
+            <div className="mb-6">
+              <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-gray-500 mt-1.5">
                 <span>0</span>
                 <span>{weeklyTarget} moves</span>
               </div>
@@ -297,7 +531,7 @@ const LoggedInView = ({
                 return (
                   <div
                     key={project.id}
-                    className="flex items-center justify-between bg-neutral-800/60 border border-neutral-700 rounded-xl px-4 py-3"
+                    className="flex items-center justify-between bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3"
                   >
                     <div className="flex items-center gap-2">
                       <span
@@ -311,9 +545,7 @@ const LoggedInView = ({
                     </div>
                     <span className="text-gray-400 text-sm">
                       {byProject?.[project.id] ?? 0}
-                      <span className="text-xs text-gray-500 ml-1">
-                        moves
-                      </span>
+                      <span className="text-xs text-gray-500 ml-1">moves</span>
                     </span>
                   </div>
                 );
@@ -322,10 +554,10 @@ const LoggedInView = ({
           </div>
 
           {/* Inspiration / definition card */}
-          <div className="bg-neutral-900 rounded-2xl p-6 md:p-8 border border-neutral-800 flex flex-col gap-4">
+          <div className="rounded-2xl p-6 md:p-8 bg-white/[0.04] border border-white/10 backdrop-blur-sm flex flex-col gap-4">
             <div className="flex items-center gap-3 text-left">
-              <div className="bg-yellow-500/15 p-3 rounded-xl">
-                <Sparkles className="w-6 h-6 text-yellow-400" />
+              <div className="bg-yellow-500/15 ring-1 ring-yellow-500/30 p-3 rounded-xl">
+                <Sparkles className="w-6 h-6 text-yellow-300" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-white">
@@ -346,7 +578,7 @@ const LoggedInView = ({
             </ul>
 
             <div className="mt-2 flex-1 flex items-center justify-center">
-              <div className="bg-neutral-800/60 rounded-xl p-3 border border-neutral-700 w-full">
+              <div className="bg-black/30 rounded-xl p-3 border border-white/10 w-full">
                 <img
                   src={inspirationImage}
                   alt="Design Inspiration"
@@ -361,7 +593,7 @@ const LoggedInView = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.05 }}
+          transition={{ duration: 0.35, delay: 0.1 }}
           className="grid gap-6 md:grid-cols-3"
         >
           {projectConfigs.map((project) => {
@@ -370,10 +602,10 @@ const LoggedInView = ({
             return (
               <div
                 key={project.id}
-                className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 flex flex-col text-left"
+                className="rounded-2xl p-5 bg-white/[0.04] border border-white/10 backdrop-blur-sm flex flex-col text-left"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`${project.bg} p-2.5 rounded-xl`}>
+                  <div className={`${project.bg} ring-1 ${project.ring} p-2.5 rounded-xl`}>
                     <Icon className={`w-5 h-5 ${project.color}`} />
                   </div>
                   <div className="flex-1">
@@ -386,7 +618,7 @@ const LoggedInView = ({
                   </div>
                   <button
                     onClick={() => startAdding(project.id)}
-                    className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                     title="Add item"
                   >
                     <Plus className="w-4 h-4 text-gray-300" />
@@ -398,26 +630,26 @@ const LoggedInView = ({
 
                 {/* Add new item form */}
                 {addingToProject === project.id && (
-                  <div className="mb-3 p-3 bg-neutral-800/60 rounded-lg border border-neutral-700">
+                  <div className="mb-3 p-3 bg-black/30 rounded-lg border border-white/10">
                     <textarea
                       value={newItemText}
                       onChange={(e) => setNewItemText(e.target.value)}
                       placeholder="Enter new item..."
-                      className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-black/40 text-gray-200 text-sm rounded p-2 mb-2 border border-white/10 focus:outline-none focus:border-emerald-500"
                       rows="2"
                       autoFocus
                     />
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAddItem(project.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded transition-colors"
                       >
                         <Save className="w-3 h-3" />
                         Save
                       </button>
                       <button
                         onClick={cancelAdding}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-white text-sm rounded transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-sm rounded transition-colors"
                       >
                         <X className="w-3 h-3" />
                         Cancel
@@ -431,11 +663,11 @@ const LoggedInView = ({
                   {items.map((item) => (
                     <li key={item.id} className="group">
                       {editingItem?.id === item.id ? (
-                        <div className="p-2 bg-neutral-800/60 rounded-lg border border-neutral-700">
+                        <div className="p-2 bg-black/30 rounded-lg border border-white/10">
                           <textarea
                             value={editItemText}
                             onChange={(e) => setEditItemText(e.target.value)}
-                            className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-black/40 text-gray-200 text-sm rounded p-2 mb-2 border border-white/10 focus:outline-none focus:border-emerald-500"
                             rows="2"
                             autoFocus
                           />
@@ -444,14 +676,14 @@ const LoggedInView = ({
                               onClick={() =>
                                 handleEditItem(item.id, project.id)
                               }
-                              className="flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded transition-colors"
+                              className="flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded transition-colors"
                             >
                               <Save className="w-3 h-3" />
                               Save
                             </button>
                             <button
                               onClick={cancelEditing}
-                              className="flex items-center gap-1 px-2 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-xs rounded transition-colors"
+                              className="flex items-center gap-1 px-2 py-1 bg-white/5 hover:bg-white/10 text-white text-xs rounded transition-colors"
                             >
                               <X className="w-3 h-3" />
                               Cancel
@@ -465,16 +697,16 @@ const LoggedInView = ({
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => startEditing(item, project.id)}
-                              className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                              className="p-1 rounded bg-white/5 hover:bg-white/10 transition-colors"
                               title="Edit"
                             >
-                              <Edit2 className="w-3 h-3 text-blue-400" />
+                              <Edit2 className="w-3 h-3 text-sky-300" />
                             </button>
                             <button
                               onClick={() =>
                                 handleDeleteItem(item.id, project.id)
                               }
-                              className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                              className="p-1 rounded bg-white/5 hover:bg-white/10 transition-colors"
                               title="Delete"
                             >
                               <Trash2 className="w-3 h-3 text-red-400" />
@@ -494,7 +726,7 @@ const LoggedInView = ({
             );
           })}
         </motion.div>
-      </div>
+      </main>
     </div>
   );
 };
