@@ -5,18 +5,37 @@ import plane from '../plane.png';
 import { analytics } from '../firebase';
 import { logEvent } from 'firebase/analytics';
 
-// Custom Seth Bailey Logo/Icon Component
-const SethBaileyIcon = ({ className = "w-8 h-8" }) => (
+// Seth Bailey monogram mark — refined "SB" squircle, matches favicon.svg
+const BrandMark = ({ className = "w-8 h-8" }) => (
   <svg
     viewBox="0 0 40 40"
     className={className}
-    fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="2" fill="none" />
-    <path d="M12 15L20 8L28 15L25 20L20 25L15 20Z" fill="currentColor" opacity="0.8" />
-    <path d="M8 20H14M26 20H32M20 8V14M20 26V32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="20" cy="20" r="2" fill="currentColor" />
+    <defs>
+      <linearGradient id="bmStroke" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#60A5FA" />
+        <stop offset="1" stopColor="#A78BFA" />
+      </linearGradient>
+      <linearGradient id="bmFill" x1="20" y1="1" x2="20" y2="39" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#161824" />
+        <stop offset="1" stopColor="#0a0b11" />
+      </linearGradient>
+    </defs>
+    <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#bmFill)" stroke="url(#bmStroke)" strokeWidth="1.5" />
+    <text
+      x="20"
+      y="20.5"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontFamily="'Helvetica Neue', Helvetica, Arial, sans-serif"
+      fontSize="16.5"
+      fontWeight="600"
+      letterSpacing="-0.5"
+      fill="#ffffff"
+    >
+      SB
+    </text>
   </svg>
 );
 
@@ -177,12 +196,12 @@ const PublicView = ({ onSignIn }) => {
   return (
     <div className="min-h-screen w-full bg-[#06070d] text-white antialiased">
       <header className="sticky top-0 z-30 bg-[#06070d]/70 backdrop-blur-xl border-b border-white/5">
-        <div className="mx-auto max-w-[1600px] px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/f35-logo.png" alt="F-35 Logo" className="w-10 h-10 object-contain" />
-            <h1 className="text-xl md:text-2xl tracking-[0.12em] font-semibold">
-              SETH BAILEY
-            </h1>
+        <div className="mx-auto max-w-[1600px] px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <BrandMark className="w-8 h-8" />
+            <span className="text-sm font-medium tracking-[0.28em] text-white/90">
+              SETH&nbsp;BAILEY
+            </span>
           </div>
 
           {/* Desktop Navigation */}
