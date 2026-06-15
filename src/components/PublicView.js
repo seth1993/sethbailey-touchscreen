@@ -296,7 +296,7 @@ const PublicView = ({ onSignIn }) => {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="max-w-2xl"
+            className="max-w-2xl text-left"
           >
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300">
               <span className="relative flex h-2 w-2">
@@ -356,7 +356,7 @@ const PublicView = ({ onSignIn }) => {
 
       {/* Selected Work */}
       <main id="projects" className="relative mx-auto max-w-[1600px] px-4 sm:px-6 py-20">
-        <div className="mb-10 flex items-end justify-between gap-6">
+        <div className="mb-10 flex items-end justify-between gap-6 text-left">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-blue-400/80">
               Selected Work
