@@ -172,38 +172,40 @@ const PublicView = ({ onSignIn }) => {
     setMobileMenuOpen(false);
   };
 
+  const techStack = ["React", "Node.js", "AI / LLMs", "React Native", "Firebase", "AEM"];
+
   return (
-    <div className="min-h-screen w-full bg-black text-white">
-      <header className="sticky top-0 z-20 bg-black/80 backdrop-blur border-b border-gray-800">
+    <div className="min-h-screen w-full bg-[#06070d] text-white antialiased">
+      <header className="sticky top-0 z-30 bg-[#06070d]/70 backdrop-blur-xl border-b border-white/5">
         <div className="mx-auto max-w-[1600px] px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/f35-logo.png" alt="F-35 Logo" className="w-10 h-10 object-contain" />
-            <h1 className="text-xl md:text-2xl lg:text-3xl tracking-tight lettering-wide">
+            <h1 className="text-xl md:text-2xl tracking-[0.12em] font-semibold">
               SETH BAILEY
             </h1>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center gap-8 text-sm">
             <a
               href="#projects"
-              className="text-gray-300 hover:text-white transition-colors cursor-pointer"
+              className="text-gray-300 hover:text-white transition-colors cursor-pointer tracking-wide"
               onClick={(e) => scrollToSection(e, 'projects')}
             >
-              PROJECTS
+              WORK
             </a>
             <a
               href="#contact"
-              className="text-gray-300 hover:text-white transition-colors cursor-pointer"
+              className="text-gray-300 hover:text-white transition-colors cursor-pointer tracking-wide"
               onClick={(e) => scrollToSection(e, 'contact')}
             >
               CONTACT
             </a>
             <button
               onClick={onSignIn}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-5 py-2 rounded-full bg-gradient-to-r from-blue-500 to-violet-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-violet-500/30 transition-all"
             >
-              SIGN IN
+              Sign In
             </button>
           </nav>
 
@@ -225,7 +227,7 @@ const PublicView = ({ onSignIn }) => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-gray-800 bg-black/95 backdrop-blur"
+              className="md:hidden border-t border-white/5 bg-[#06070d]/95 backdrop-blur"
             >
               <nav className="flex flex-col px-6 py-4 space-y-4">
                 <a
@@ -233,7 +235,7 @@ const PublicView = ({ onSignIn }) => {
                   className="text-gray-300 hover:text-white transition-colors cursor-pointer py-2 text-lg"
                   onClick={(e) => scrollToSection(e, 'projects')}
                 >
-                  PROJECTS
+                  WORK
                 </a>
                 <a
                   href="#contact"
@@ -247,9 +249,9 @@ const PublicView = ({ onSignIn }) => {
                     setMobileMenuOpen(false);
                     onSignIn();
                   }}
-                  className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-left text-lg font-semibold"
+                  className="px-4 py-3 rounded-full bg-gradient-to-r from-blue-500 to-violet-500 text-white transition-colors text-left text-lg font-semibold"
                 >
-                  SIGN IN
+                  Sign In
                 </button>
               </nav>
             </motion.div>
@@ -257,40 +259,117 @@ const PublicView = ({ onSignIn }) => {
         </AnimatePresence>
       </header>
 
-      {/* Header Image Section */}
-      <div className="relative w-full h-96 overflow-hidden bg-black">
-        <div className="relative h-full w-full flex">
-          <div className="flex-1 bg-black flex items-center">
-            <div className="mx-auto max-w-[1600px] text-white text-left px-6">
-              <div className="flex items-center gap-4 mb-4">
-                {/* <img src="/f35-logo.png" alt="F-35 Logo" className="w-16 h-16 object-contain" /> */}
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tight">
-                  SETH BAILEY
-                </h2>
-              </div>
-              <p className="text-base md:text-lg text-gray-300 max-w-lg">
-                Building the future with AI. Bringing your projects to life.
-              </p>
-            </div>
-          </div>
-          <div className="flex-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent z-10"></div>
-            <img
-              src={plane}
-              alt="Header"
-              className="w-full h-full object-cover"
-            />
-          </div>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden border-b border-white/5">
+        {/* Ambient gradient mesh */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-40 -left-32 w-[42rem] h-[42rem] bg-blue-600/20 rounded-full blur-3xl" />
+          <div className="absolute top-10 right-0 w-[38rem] h-[38rem] bg-violet-600/20 rounded-full blur-3xl" />
+          <div
+            className="absolute inset-0 opacity-[0.06]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+              backgroundSize: "56px 56px",
+              maskImage:
+                "radial-gradient(circle at 30% 40%, black, transparent 75%)",
+              WebkitMaskImage:
+                "radial-gradient(circle at 30% 40%, black, transparent 75%)",
+            }}
+          />
         </div>
-      </div>
 
-      {/* Contact Section */}
-      <div id="contact">
-        <ContactSection />
-      </div>
+        {/* Plane visual, faded into the background */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-full lg:w-3/5">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06070d] via-[#06070d]/85 lg:via-[#06070d]/60 to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#06070d] via-transparent to-[#06070d]/40 z-10" />
+          <img
+            src={plane}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover opacity-50 lg:opacity-70"
+          />
+        </div>
 
-      <main id="projects" className="mx-auto max-w-[1600px] px-4 sm:px-6 py-8 bg-black">
-        <div className="space-y-6">
+        <div className="relative z-20 mx-auto max-w-[1600px] px-6 pt-20 pb-24 md:pt-28 md:pb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-2xl"
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              Available for new projects
+            </span>
+
+            <h2 className="mt-6 text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
+              Building the future
+              <br />
+              <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+                with AI.
+              </span>
+            </h2>
+
+            <p className="mt-6 text-lg md:text-xl text-gray-300/90 leading-relaxed max-w-xl">
+              I'm Seth Bailey — a full-stack engineer shipping AI-powered
+              products end to end. From forecasting platforms to mobile apps, I
+              turn ambitious ideas into fast, reliable software.
+            </p>
+
+            <div className="mt-9 flex flex-wrap items-center gap-4">
+              <a
+                href="#projects"
+                onClick={(e) => scrollToSection(e, 'projects')}
+                className="group inline-flex items-center gap-2 rounded-full bg-white text-black px-6 py-3 text-sm font-semibold hover:bg-gray-100 transition-colors"
+              >
+                View Selected Work
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
+              <a
+                href="#contact"
+                onClick={(e) => scrollToSection(e, 'contact')}
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              >
+                Get in Touch
+              </a>
+            </div>
+
+            <div className="mt-10 flex flex-wrap gap-2.5">
+              {techStack.map((tech) => (
+                <span
+                  key={tech}
+                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-300"
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Selected Work */}
+      <main id="projects" className="relative mx-auto max-w-[1600px] px-4 sm:px-6 py-20">
+        <div className="mb-10 flex items-end justify-between gap-6">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-blue-400/80">
+              Selected Work
+            </p>
+            <h2 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">
+              Products I've designed & shipped
+            </h2>
+          </div>
+          <span className="hidden md:block text-sm text-gray-500">
+            {projects.length} live products
+          </span>
+        </div>
+        <div className="space-y-8">
           {projects.map((project, index) => (
             <FullWidthTile
               key={project.id}
@@ -301,6 +380,11 @@ const PublicView = ({ onSignIn }) => {
         </div>
       </main>
 
+      {/* Contact Section */}
+      <div id="contact">
+        <ContactSection />
+      </div>
+
       {/* Footer */}
       <Footer scrollToSection={scrollToSection} />
     </div>
@@ -310,54 +394,49 @@ const PublicView = ({ onSignIn }) => {
 function FullWidthTile({ project, isReversed }) {
   return (
     <motion.div
-      className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="group relative overflow-hidden rounded-3xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-colors duration-300"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5 }}
     >
-      <div className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-stretch min-h-[500px]`}>
+      <div className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-stretch min-h-[480px]`}>
         {/* Image Side with Fade Overlay */}
-        <div className="w-full lg:w-1/2 relative overflow-hidden min-h-[300px] lg:min-h-[500px]">
+        <div className="w-full lg:w-1/2 relative overflow-hidden min-h-[280px] lg:min-h-[480px]">
           {project.image && (
             <>
               <img
                 src={project.image}
                 alt={project.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               />
               {/* Strong Fade to Content Side - Only on Desktop */}
-              <div className={`absolute inset-0 hidden lg:block bg-gradient-to-${isReversed ? 'l' : 'r'} from-transparent via-gray-900/60 to-gray-900`} />
+              <div className={`absolute inset-0 hidden lg:block bg-gradient-to-${isReversed ? 'l' : 'r'} from-transparent via-[#0b0c14]/70 to-[#0b0c14]`} />
               {/* Dark overlay for mobile */}
-              <div className="absolute inset-0 lg:hidden bg-black/30" />
+              <div className="absolute inset-0 lg:hidden bg-gradient-to-t from-[#0b0c14] via-[#0b0c14]/40 to-transparent" />
             </>
           )}
         </div>
 
         {/* Content Side */}
-        <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-gray-900 to-gray-800 relative">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)`
-            }}></div>
-          </div>
-
+        <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-[#0b0c14] to-[#0d0e18] relative">
           <div className="relative z-10">
             {/* Header with Icon */}
             <div className="flex items-start gap-4 mb-6">
-              <div className="p-3 bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-blue-500/30">
                 <FolderKanban className="h-5 w-5 lg:h-6 lg:w-6 text-blue-400" />
               </div>
               <div>
                 <h2 className="text-2xl lg:text-4xl font-bold tracking-tight text-white mb-2">{project.name}</h2>
                 <div className="flex items-center gap-2">
-                  <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                  <div className="h-1 w-12 rounded-full bg-gradient-to-r from-blue-500 to-violet-500"></div>
                   <p className="text-xs lg:text-sm uppercase tracking-widest text-gray-400">{project.owner}</p>
                 </div>
               </div>
             </div>
 
             {/* Summary */}
-            <p className="text-lg lg:text-xl text-gray-300 leading-relaxed mb-4 font-medium">
+            <p className="text-lg lg:text-xl text-gray-200 leading-relaxed mb-4 font-medium">
               {project.summary}
             </p>
 
@@ -369,11 +448,11 @@ function FullWidthTile({ project, isReversed }) {
             {/* CTA Button */}
             {project.url && (
               <div>
-                <a 
-                  href={project.url} 
-                  target="_blank" 
+                <a
+                  href={project.url}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm lg:text-base font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 rounded"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 rounded-full bg-white text-black text-sm lg:text-base font-semibold hover:bg-gray-100 transition-all duration-300"
                 >
                   <span>Visit Site</span>
                   <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
