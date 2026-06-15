@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, Code, Zap, Send, Users, TrendingUp, Menu, X } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { Code, Zap, Send, Users, TrendingUp, Menu, X, ArrowUpRight } from "lucide-react";
 import plane from '../plane.png';
 import { analytics } from '../firebase';
 import { logEvent } from 'firebase/analytics';
@@ -339,23 +339,28 @@ const PublicView = ({ onSignIn }) => {
               turn ambitious ideas into fast, reliable software.
             </p>
 
-            <div className="mt-9 flex flex-wrap items-center gap-4">
+            <div className="mt-9 flex flex-wrap items-center gap-7">
               <a
                 href="#projects"
                 onClick={(e) => scrollToSection(e, 'projects')}
-                className="group inline-flex items-center gap-2 rounded-full bg-white text-black px-6 py-3 text-sm font-semibold hover:bg-gray-100 transition-colors"
+                className="group inline-flex items-center gap-2 rounded-full bg-white text-black pl-6 pr-5 py-3 text-sm font-medium hover:bg-gray-100 transition-colors"
               >
-                View Selected Work
-                <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                View work
+                <span className="grid place-items-center w-5 h-5 rounded-full bg-black/10 transition-transform group-hover:translate-x-0.5">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
               </a>
               <a
                 href="#contact"
                 onClick={(e) => scrollToSection(e, 'contact')}
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+                className="group inline-flex items-center gap-1.5 text-sm font-medium text-gray-300 hover:text-white transition-colors"
               >
-                Get in Touch
+                <span className="relative">
+                  Get in touch
+                  <span className="absolute left-0 -bottom-1 h-px w-full origin-left scale-x-0 bg-white/40 transition-transform duration-300 group-hover:scale-x-100" />
+                </span>
               </a>
             </div>
 
@@ -373,30 +378,24 @@ const PublicView = ({ onSignIn }) => {
         </div>
       </section>
 
-      {/* Selected Work */}
-      <main id="projects" className="relative mx-auto max-w-[1600px] px-4 sm:px-6 py-20">
-        <div className="mb-10 flex items-end justify-between gap-6 text-left">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-blue-400/80">
-              Selected Work
-            </p>
-            <h2 className="mt-2 text-3xl md:text-4xl font-bold tracking-tight">
-              Products I've designed & shipped
-            </h2>
-          </div>
-          <span className="hidden md:block text-sm text-gray-500">
-            {projects.length} live products
-          </span>
+      {/* Selected Work — scroll-driven scenes */}
+      <main id="projects" className="relative">
+        <div className="mx-auto max-w-[1600px] px-6 pt-24 pb-4 text-left">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-blue-400/80">
+            Selected Work
+          </p>
+          <h2 className="mt-3 text-3xl md:text-5xl font-bold tracking-tight">
+            Things I've shipped.
+          </h2>
         </div>
-        <div className="space-y-8">
-          {projects.map((project, index) => (
-            <FullWidthTile
-              key={project.id}
-              project={project}
-              isReversed={index % 2 === 1}
-            />
-          ))}
-        </div>
+        {projects.map((project, index) => (
+          <ProjectScene
+            key={project.id}
+            project={project}
+            index={index}
+            isReversed={index % 2 === 1}
+          />
+        ))}
       </main>
 
       {/* Contact Section */}
@@ -410,80 +409,132 @@ const PublicView = ({ onSignIn }) => {
   );
 };
 
-function FullWidthTile({ project, isReversed }) {
+function ProjectScene({ project, index, isReversed }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+
+  // Parallax: image drifts opposite to scroll, big index number drifts with it
+  const imageY = useTransform(scrollYProgress, [0, 1], ["-12%", "12%"]);
+  const numberY = useTransform(scrollYProgress, [0, 1], [60, -60]);
+
+  let domain = "";
+  try {
+    domain = project.url ? new URL(project.url).hostname.replace(/^www\./, "") : "";
+  } catch (e) {
+    domain = "";
+  }
+
+  const num = String(index + 1).padStart(2, "0");
+
   return (
-    <motion.div
-      className="group relative overflow-hidden rounded-3xl bg-white/[0.03] border border-white/10 hover:border-white/20 transition-colors duration-300"
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.5 }}
+    <section
+      ref={ref}
+      className="relative py-20 md:py-28 lg:py-36 border-t border-white/5 overflow-hidden"
     >
-      <div className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-stretch min-h-[480px]`}>
-        {/* Image Side with Fade Overlay */}
-        <div className="w-full lg:w-1/2 relative overflow-hidden min-h-[280px] lg:min-h-[480px]">
+      <div
+        className={`mx-auto max-w-[1500px] px-6 grid items-center gap-12 lg:gap-20 lg:grid-cols-2`}
+      >
+        {/* Image */}
+        <motion.div
+          initial={{ opacity: 0, scale: 1.06 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: "-120px" }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          className={`relative h-[44vh] sm:h-[56vh] lg:h-[72vh] overflow-hidden rounded-2xl ${
+            isReversed ? "lg:order-2" : "lg:order-1"
+          }`}
+        >
           {project.image && (
-            <>
-              <img
-                src={project.image}
-                alt={project.name}
-                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              />
-              {/* Strong Fade to Content Side - Only on Desktop */}
-              <div className={`absolute inset-0 hidden lg:block bg-gradient-to-${isReversed ? 'l' : 'r'} from-transparent via-[#0b0c14]/70 to-[#0b0c14]`} />
-              {/* Dark overlay for mobile */}
-              <div className="absolute inset-0 lg:hidden bg-gradient-to-t from-[#0b0c14] via-[#0b0c14]/40 to-transparent" />
-            </>
+            <motion.img
+              src={project.image}
+              alt={project.name}
+              style={{ y: imageY }}
+              className="absolute inset-x-0 -top-[12%] h-[124%] w-full object-cover"
+            />
           )}
-        </div>
+          <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl" />
+        </motion.div>
 
-        {/* Content Side */}
-        <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-[#0b0c14] to-[#0d0e18] relative">
-          <div className="relative z-10">
-            {/* Header with Icon */}
-            <div className="flex items-start gap-4 mb-6">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-blue-500/30">
-                <FolderKanban className="h-5 w-5 lg:h-6 lg:w-6 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl lg:text-4xl font-bold tracking-tight text-white mb-2">{project.name}</h2>
-                <div className="flex items-center gap-2">
-                  <div className="h-1 w-12 rounded-full bg-gradient-to-r from-blue-500 to-violet-500"></div>
-                  <p className="text-xs lg:text-sm uppercase tracking-widest text-gray-400">{project.owner}</p>
-                </div>
-              </div>
-            </div>
+        {/* Text */}
+        <div className={`relative ${isReversed ? "lg:order-1" : "lg:order-2"} text-left`}>
+          {/* Oversized index, drifts on scroll */}
+          <motion.span
+            aria-hidden="true"
+            style={{ y: numberY }}
+            className="pointer-events-none absolute -top-20 -left-2 select-none font-bold text-[7rem] lg:text-[10rem] leading-none text-white/[0.04]"
+          >
+            {num}
+          </motion.span>
 
-            {/* Summary */}
-            <p className="text-lg lg:text-xl text-gray-200 leading-relaxed mb-4 font-medium">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ staggerChildren: 0.08 }}
+            className="relative"
+          >
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.5 }}
+              className="font-mono text-xs uppercase tracking-[0.3em] text-blue-400/80"
+            >
+              {num} — {project.owner}
+            </motion.p>
+
+            <motion.h3
+              variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.5 }}
+              className="mt-4 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white"
+            >
+              {project.name}
+            </motion.h3>
+
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.5 }}
+              className="mt-5 text-xl md:text-2xl text-gray-200 leading-snug max-w-xl"
+            >
               {project.summary}
-            </p>
+            </motion.p>
 
-            {/* Extended Description */}
-            <p className="text-sm lg:text-base text-gray-400 leading-relaxed mb-6 lg:mb-8">
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.5 }}
+              className="mt-5 text-base text-gray-400 leading-relaxed max-w-xl"
+            >
               {project.description}
-            </p>
+            </motion.p>
 
-            {/* CTA Button */}
             {project.url && (
-              <div>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.5 }}
+                className="mt-8 flex items-center gap-6"
+              >
                 <a
                   href={project.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 rounded-full bg-white text-black text-sm lg:text-base font-semibold hover:bg-gray-100 transition-all duration-300"
+                  className="group inline-flex items-center gap-2 text-sm font-medium text-white"
                 >
-                  <span>Visit Site</span>
-                  <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
+                  <span className="relative">
+                    Visit site
+                    <span className="absolute left-0 -bottom-1 h-px w-full origin-left scale-x-0 bg-white/40 transition-transform duration-300 group-hover:scale-x-100" />
+                  </span>
+                  <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </a>
-              </div>
+                {domain && (
+                  <span className="font-mono text-xs text-gray-500">{domain}</span>
+                )}
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
-    </motion.div>
+    </section>
   );
 }
 
