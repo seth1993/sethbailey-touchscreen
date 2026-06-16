@@ -6,17 +6,16 @@ import {
   Zap,
   Flame,
   Coffee,
-  Trophy,
   Send,
-  MessageSquare,
   Megaphone,
   HelpCircle,
   Sparkles,
-  Plus,
   X,
-  ArrowRight,
   Trash2,
-  Users,
+  Check,
+  CheckCircle2,
+  RotateCcw,
+  Clock,
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -34,48 +33,59 @@ import {
 /* Game config                                                         */
 /* ------------------------------------------------------------------ */
 
-// Moves you can make, straight from the Bidfolder GTM playbook.
-const ACTION_TYPES = [
+// Suggested daily engagements, from the Bidfolder GTM playbook.
+// needsContact quests ask who, and schedule a "circle back" in followUpDays.
+const QUESTS = [
   {
-    key: "community_post",
-    label: "Community Post",
-    blurb: "Share a takeoff tip or answer in a group",
-    xp: 10,
+    key: "tip",
+    label: "Share a takeoff tip",
+    sub: "Post value in an estimator group",
+    points: 10,
     icon: Megaphone,
     accent: "blue",
+    needsContact: false,
+    followUpDays: null,
   },
   {
-    key: "helpful_answer",
-    label: "Answer a Question",
-    blurb: "Be useful in a thread, no pitch",
-    xp: 8,
+    key: "answer",
+    label: "Answer a question",
+    sub: "Be useful in a thread, no pitch",
+    points: 8,
     icon: HelpCircle,
     accent: "violet",
+    needsContact: false,
+    followUpDays: null,
   },
   {
     key: "dm",
-    label: "DM an Engager",
-    blurb: "Message someone who engaged",
-    xp: 12,
+    label: "DM someone who engaged",
+    sub: "Start a real conversation",
+    points: 12,
     icon: Send,
     accent: "sky",
+    needsContact: true,
+    followUpDays: 3,
   },
   {
-    key: "problem_interview",
-    label: "Invite to Interview",
-    blurb: "“Can I buy you 15 min + a coffee?”",
-    xp: 25,
+    key: "interview",
+    label: "Invite to a 15-min interview",
+    sub: "“Can I buy you a coffee?”",
+    points: 25,
     icon: Coffee,
     accent: "amber",
+    needsContact: true,
+    followUpDays: 2,
   },
-];
-
-// The funnel. Advancing a contact = a conversion.
-const STAGES = [
-  { key: "logged", label: "Outreach", icon: Send, accent: "sky" },
-  { key: "engaged", label: "Engaged", icon: MessageSquare, accent: "violet" },
-  { key: "interview", label: "Interview", icon: Coffee, accent: "amber" },
-  { key: "customer", label: "Customer", icon: Trophy, accent: "emerald" },
+  {
+    key: "thanks",
+    label: "Thank a recent helper",
+    sub: "Strengthen a relationship",
+    points: 6,
+    icon: Sparkles,
+    accent: "emerald",
+    needsContact: true,
+    followUpDays: 7,
+  },
 ];
 
 const CHANNELS = [
@@ -92,83 +102,50 @@ const CHANNELS = [
   "Other",
 ];
 
-const INTERVIEW_TARGET = 30;
+const WEEKLY_GOAL = 15;
+const FOLLOWUP_POINTS = 8;
+const MAX_TOUCHES = 3; // after this many touches, the relationship is "warm"
 
-// Bonus XP for moving a contact deeper into the funnel.
-const STAGE_BONUS = { logged: 0, engaged: 10, interview: 20, customer: 60 };
-
-// Explicit class maps so Tailwind keeps them.
 const ACCENT = {
-  blue: {
-    text: "text-blue-300",
-    bg: "bg-blue-500/10",
-    ring: "ring-blue-500/30",
-    bar: "from-blue-500 to-cyan-400",
-    solid: "bg-blue-500 hover:bg-blue-400",
-  },
-  violet: {
-    text: "text-violet-300",
-    bg: "bg-violet-500/10",
-    ring: "ring-violet-500/30",
-    bar: "from-violet-500 to-fuchsia-400",
-    solid: "bg-violet-500 hover:bg-violet-400",
-  },
-  sky: {
-    text: "text-sky-300",
-    bg: "bg-sky-500/10",
-    ring: "ring-sky-500/30",
-    bar: "from-sky-500 to-cyan-400",
-    solid: "bg-sky-500 hover:bg-sky-400",
-  },
-  amber: {
-    text: "text-amber-300",
-    bg: "bg-amber-500/10",
-    ring: "ring-amber-500/30",
-    bar: "from-amber-500 to-orange-400",
-    solid: "bg-amber-500 hover:bg-amber-400",
-  },
-  emerald: {
-    text: "text-emerald-300",
-    bg: "bg-emerald-500/10",
-    ring: "ring-emerald-500/30",
-    bar: "from-emerald-500 to-teal-400",
-    solid: "bg-emerald-500 hover:bg-emerald-400",
-  },
+  blue: { text: "text-blue-300", bg: "bg-blue-500/10", ring: "ring-blue-500/30", bar: "from-blue-500 to-cyan-400", solid: "bg-blue-500 hover:bg-blue-400" },
+  violet: { text: "text-violet-300", bg: "bg-violet-500/10", ring: "ring-violet-500/30", bar: "from-violet-500 to-fuchsia-400", solid: "bg-violet-500 hover:bg-violet-400" },
+  sky: { text: "text-sky-300", bg: "bg-sky-500/10", ring: "ring-sky-500/30", bar: "from-sky-500 to-cyan-400", solid: "bg-sky-500 hover:bg-sky-400" },
+  amber: { text: "text-amber-300", bg: "bg-amber-500/10", ring: "ring-amber-500/30", bar: "from-amber-500 to-orange-400", solid: "bg-amber-500 hover:bg-amber-400" },
+  emerald: { text: "text-emerald-300", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30", bar: "from-emerald-500 to-teal-400", solid: "bg-emerald-500 hover:bg-emerald-400" },
 };
 
 /* ------------------------------------------------------------------ */
-/* XP / level helpers                                                  */
+/* Date + XP helpers                                                   */
 /* ------------------------------------------------------------------ */
 
-const xpForLevelStart = (level) => 25 * level * (level - 1); // 0, 50, 150, 300, 500...
+const nowIso = () => new Date().toISOString();
+const addDaysIso = (days) => new Date(Date.now() + days * 86400000).toISOString();
+const dayKey = (iso) => (iso ? iso.slice(0, 10) : "");
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const isDue = (iso) => !!iso && Date.parse(iso) <= Date.now();
+const daysAgo = (iso) => Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 86400000));
 
+const xpForLevelStart = (level) => 25 * level * (level - 1); // 0, 50, 150, 300...
 const levelFromXp = (xp) => {
   let lvl = 1;
   while (xpForLevelStart(lvl + 1) <= xp) lvl++;
   return lvl;
 };
+const earnedXp = (a) => (a.points || 0) + (a.touches || 0) * FOLLOWUP_POINTS;
 
-const activityXp = (a) => {
-  const base = ACTION_TYPES.find((t) => t.key === a.type)?.xp ?? 5;
-  return base + (STAGE_BONUS[a.stage] ?? 0);
-};
-
-const stageIndex = (key) => STAGES.findIndex((s) => s.key === key);
-
-const dayKey = (iso) => (iso ? iso.slice(0, 10) : "");
+const questFor = (key) => QUESTS.find((q) => q.key === key);
 
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
 
 const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
-  const [activities, setActivities] = useState([]);
-  const [composerType, setComposerType] = useState(null); // an ACTION_TYPES key
+  const [items, setItems] = useState([]);
+  const [composerQuest, setComposerQuest] = useState(null);
   const [form, setForm] = useState({ contact: "", channel: CHANNELS[0], notes: "" });
   const [toasts, setToasts] = useState([]);
   const [toastSeq, setToastSeq] = useState(0);
 
-  // Live subscription — real data, trickles in as it changes.
   useEffect(() => {
     const q = query(collection(db, "growthActivities"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(
@@ -176,7 +153,7 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
       (snap) => {
         const rows = [];
         snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
-        setActivities(rows);
+        setItems(rows);
       },
       (err) => console.error("growthActivities subscription error:", err)
     );
@@ -187,38 +164,46 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
     const id = `t-${toastSeq}`;
     setToastSeq((n) => n + 1);
     setToasts((prev) => [...prev, { id, text, accent, icon }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3200);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3200);
   };
 
   /* ---- derived game state ---- */
   const stats = useMemo(() => {
-    const totalXp = activities.reduce((sum, a) => sum + activityXp(a), 0);
+    const totalXp = items.reduce((s, a) => s + earnedXp(a), 0);
     const level = levelFromXp(totalXp);
     const start = xpForLevelStart(level);
     const next = xpForLevelStart(level + 1);
-    const levelProgress =
-      next > start ? Math.round(((totalXp - start) / (next - start)) * 100) : 0;
+    const levelProgress = next > start ? Math.round(((totalXp - start) / (next - start)) * 100) : 0;
 
-    const interviews = activities.filter(
-      (a) => a.stage === "interview" || a.stage === "customer"
+    const weekAgo = Date.now() - 7 * 86400000;
+    const weekCount = items.filter((a) => Date.parse(a.createdAt) >= weekAgo).length;
+
+    const dueFollowUps = items
+      .filter((a) => a.status === "active" && isDue(a.nextFollowUpAt))
+      .sort((a, b) => Date.parse(a.nextFollowUpAt) - Date.parse(b.nextFollowUpAt));
+    const scheduledCount = items.filter(
+      (a) => a.status === "active" && a.nextFollowUpAt && !isDue(a.nextFollowUpAt)
     ).length;
-    const customers = activities.filter((a) => a.stage === "customer").length;
 
-    const byStage = STAGES.reduce((acc, s) => {
-      acc[s.key] = activities.filter((a) => a.stage === s.key);
-      return acc;
-    }, {});
+    // counts done today per quest
+    const today = todayKey();
+    const todayByQuest = {};
+    items.forEach((a) => {
+      if (dayKey(a.createdAt) === today) {
+        todayByQuest[a.questKey] = (todayByQuest[a.questKey] || 0) + 1;
+      }
+    });
+    const todayTotal = items.filter((a) => dayKey(a.createdAt) === today).length;
 
-    // Daily streak: consecutive days (ending today) with at least one move.
-    const days = new Set(activities.map((a) => dayKey(a.createdAt)).filter(Boolean));
+    // streak from any-activity days (created or last touched)
+    const days = new Set();
+    items.forEach((a) => {
+      if (a.createdAt) days.add(dayKey(a.createdAt));
+      if (a.lastTouchAt) days.add(dayKey(a.lastTouchAt));
+    });
     let streak = 0;
     const cursor = new Date();
-    // Allow the streak to count even if nothing logged *yet* today.
-    if (!days.has(cursor.toISOString().slice(0, 10))) {
-      cursor.setDate(cursor.getDate() - 1);
-    }
+    if (!days.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
     while (days.has(cursor.toISOString().slice(0, 10))) {
       streak++;
       cursor.setDate(cursor.getDate() - 1);
@@ -230,65 +215,96 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
       levelProgress,
       xpIntoLevel: totalXp - start,
       xpForLevel: next - start,
-      interviews,
-      customers,
-      byStage,
+      weekCount,
+      dueFollowUps,
+      scheduledCount,
+      todayByQuest,
+      todayTotal,
       streak,
-      moves: activities.length,
     };
-  }, [activities]);
+  }, [items]);
 
   /* ---- actions ---- */
-  const openComposer = (type) => {
-    setComposerType(type);
-    setForm({ contact: "", channel: CHANNELS[0], notes: "" });
+  const handleQuestClick = (quest) => {
+    if (quest.needsContact) {
+      setComposerQuest(quest);
+      setForm({ contact: "", channel: CHANNELS[0], notes: "" });
+    } else {
+      logQuest(quest, {});
+    }
   };
 
-  const logMove = async () => {
-    const type = composerType;
-    if (!type) return;
-    const def = ACTION_TYPES.find((t) => t.key === type);
+  const logQuest = async (quest, extra) => {
+    setComposerQuest(null);
     const payload = {
-      type,
-      contact: form.contact.trim() || "Anonymous estimator",
-      channel: form.channel,
-      notes: form.notes.trim(),
-      stage: "logged",
-      project: "bidfolder",
-      createdAt: new Date().toISOString(),
+      questKey: quest.key,
+      label: quest.label,
+      points: quest.points,
+      contact: (extra.contact || "").trim() || null,
+      channel: extra.channel || null,
+      notes: (extra.notes || "").trim() || "",
+      touches: 0,
+      status: "active",
+      createdAt: nowIso(),
+      lastTouchAt: nowIso(),
+      nextFollowUpAt: quest.followUpDays ? addDaysIso(quest.followUpDays) : null,
     };
-    setComposerType(null);
     try {
       await addDoc(collection(db, "growthActivities"), payload);
-      pushToast(`+${def.xp} XP · ${def.label}`, def.accent, def.icon);
-    } catch (e) {
-      console.error("Error logging move:", e);
-      pushToast("Couldn't save that move", "amber", X);
-    }
-  };
-
-  const advance = async (activity) => {
-    const idx = stageIndex(activity.stage);
-    if (idx >= STAGES.length - 1) return;
-    const nextStage = STAGES[idx + 1];
-    try {
-      await updateDoc(doc(db, "growthActivities", activity.id), {
-        stage: nextStage.key,
-        updatedAt: new Date().toISOString(),
-      });
-      if (nextStage.key === "interview") {
-        pushToast(`☕ Interview booked with ${activity.contact}!`, "amber", Coffee);
-      } else if (nextStage.key === "customer") {
-        pushToast(`🏆 ${activity.contact} converted to a customer!`, "emerald", Trophy);
-      } else {
-        pushToast(`${activity.contact} → ${nextStage.label}`, nextStage.accent, ArrowRight);
+      const who = payload.contact ? ` · ${payload.contact}` : "";
+      pushToast(`+${quest.points} XP · ${quest.label}${who}`, quest.accent, quest.icon);
+      if (quest.followUpDays) {
+        setTimeout(
+          () => pushToast(`Will resurface in ${quest.followUpDays}d to circle back`, "sky", Clock),
+          600
+        );
       }
     } catch (e) {
-      console.error("Error advancing:", e);
+      console.error("Error logging quest:", e);
+      pushToast("Couldn't save that — check Firestore rules", "amber", X);
     }
   };
 
-  const removeActivity = async (id) => {
+  const circleBack = async (item) => {
+    const nextTouches = (item.touches || 0) + 1;
+    const warm = nextTouches >= MAX_TOUCHES;
+    const q = questFor(item.questKey);
+    const days = q?.followUpDays || 4;
+    try {
+      await updateDoc(doc(db, "growthActivities", item.id), {
+        touches: nextTouches,
+        lastTouchAt: nowIso(),
+        status: warm ? "done" : "active",
+        nextFollowUpAt: warm ? null : addDaysIso(days),
+      });
+      if (warm) {
+        pushToast(`🔥 ${item.contact || "Contact"} is warm — relationship built! +${FOLLOWUP_POINTS} XP`, "emerald", Flame);
+      } else {
+        pushToast(`+${FOLLOWUP_POINTS} XP · circled back with ${item.contact || "them"}`, "sky", RotateCcw);
+      }
+    } catch (e) {
+      console.error("Error circling back:", e);
+    }
+  };
+
+  const snooze = async (item, days = 3) => {
+    try {
+      await updateDoc(doc(db, "growthActivities", item.id), { nextFollowUpAt: addDaysIso(days) });
+      pushToast(`Snoozed ${days}d`, "violet", Clock);
+    } catch (e) {
+      console.error("Error snoozing:", e);
+    }
+  };
+
+  const archive = async (item) => {
+    try {
+      await updateDoc(doc(db, "growthActivities", item.id), { status: "done", nextFollowUpAt: null });
+    } catch (e) {
+      console.error("Error archiving:", e);
+    }
+  };
+
+  const remove = async (id) => {
     try {
       await deleteDoc(doc(db, "growthActivities", id));
     } catch (e) {
@@ -319,7 +335,7 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 40, scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 bg-white/[0.06] backdrop-blur-xl border border-white/10 shadow-xl`}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 bg-white/[0.06] backdrop-blur-xl border border-white/10 shadow-xl"
               >
                 <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${a.bg} ring-1 ${a.ring}`}>
                   <Icon className={`w-4 h-4 ${a.text}`} />
@@ -333,28 +349,22 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
 
       {/* Header */}
       <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/[0.03] border-b border-white/10">
-        <div className="mx-auto max-w-[1500px] px-6 py-4 flex justify-between items-center">
+        <div className="mx-auto max-w-[1400px] px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-fuchsia-500/30">
               <Zap className="w-5 h-5 text-white" />
             </span>
             <div className="leading-tight">
               <h1 className="text-base font-semibold">Growth Quest</h1>
-              <p className="text-xs text-gray-400">Bidfolder · estimator outreach</p>
+              <p className="text-xs text-gray-400">Bidfolder · estimator engagement</p>
             </div>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={onToggleView}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-gray-100 transition-colors"
-            >
+            <button onClick={onToggleView} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-gray-100 transition-colors">
               <Eye className="w-4 h-4" />
               {showPublicView ? "Back to Dashboard" : "View Public Page"}
             </button>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/90 hover:bg-red-500 text-sm text-white transition-colors shadow-lg shadow-red-500/20"
-            >
+            <button onClick={onLogout} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/90 hover:bg-red-500 text-sm text-white transition-colors shadow-lg shadow-red-500/20">
               <LogOut className="w-4 h-4" />
               Logout
             </button>
@@ -362,7 +372,7 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
         </div>
       </header>
 
-      <main className="relative z-10 max-w-[1500px] mx-auto px-6 py-8 space-y-8">
+      <main className="relative z-10 max-w-[1400px] mx-auto px-6 py-8 space-y-8">
         {/* Stat bar */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -370,209 +380,169 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
           transition={{ duration: 0.3 }}
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
         >
-          {/* Level / XP */}
+          {/* Level */}
           <div className="rounded-2xl p-5 bg-white/[0.04] border border-white/10 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-500/30">
-                <Trophy className="w-5 h-5 text-violet-300" />
+                <Zap className="w-5 h-5 text-violet-300" />
               </span>
               <PopNumber value={stats.level} className="text-3xl font-bold" prefix="Lv " />
             </div>
-            <p className="mt-3 text-xs text-gray-400">
-              {stats.xpIntoLevel} / {stats.xpForLevel} XP to next level
-            </p>
+            <p className="mt-3 text-xs text-gray-400">{stats.xpIntoLevel} / {stats.xpForLevel} XP to next level</p>
             <div className="mt-2 h-2 rounded-full bg-white/5 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400"
-                animate={{ width: `${stats.levelProgress}%` }}
-                transition={{ type: "spring", stiffness: 120, damping: 20 }}
-              />
+              <motion.div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400" animate={{ width: `${stats.levelProgress}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
             </div>
           </div>
 
           {/* Streak */}
-          <StatTile
-            icon={Flame}
-            accent="amber"
-            value={stats.streak}
-            label={stats.streak === 1 ? "day streak" : "day streak"}
-            sub={stats.streak > 0 ? "Keep it alive — log a move today" : "Log a move to start a streak"}
-          />
+          <StatTile icon={Flame} accent="amber" value={stats.streak} label="day streak" sub={stats.streak > 0 ? "Keep it alive — engage today" : "Engage today to start a streak"} />
 
-          {/* Interviews to target */}
+          {/* This week */}
           <div className="rounded-2xl p-5 bg-white/[0.04] border border-white/10 backdrop-blur-sm">
             <div className="flex items-center justify-between">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 ring-1 ring-amber-500/30">
-                <Coffee className="w-5 h-5 text-amber-300" />
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/15 ring-1 ring-sky-500/30">
+                <CheckCircle2 className="w-5 h-5 text-sky-300" />
               </span>
               <div className="text-right">
-                <PopNumber value={stats.interviews} className="text-3xl font-bold" />
-                <span className="text-gray-500 text-lg"> / {INTERVIEW_TARGET}</span>
+                <PopNumber value={stats.weekCount} className="text-3xl font-bold" />
+                <span className="text-gray-500 text-lg"> / {WEEKLY_GOAL}</span>
               </div>
             </div>
-            <p className="mt-3 text-xs text-gray-400">problem interviews</p>
+            <p className="mt-3 text-xs text-gray-400">engagements this week</p>
             <div className="mt-2 h-2 rounded-full bg-white/5 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-400"
-                animate={{
-                  width: `${Math.min(100, (stats.interviews / INTERVIEW_TARGET) * 100)}%`,
-                }}
-                transition={{ type: "spring", stiffness: 120, damping: 20 }}
-              />
+              <motion.div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400" animate={{ width: `${Math.min(100, (stats.weekCount / WEEKLY_GOAL) * 100)}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
             </div>
           </div>
 
-          {/* Customers */}
-          <StatTile
-            icon={Trophy}
-            accent="emerald"
-            value={stats.customers}
-            label={stats.customers === 1 ? "customer won" : "customers won"}
-            sub={`${stats.moves} total moves logged`}
-          />
+          {/* Follow-ups due */}
+          <StatTile icon={RotateCcw} accent={stats.dueFollowUps.length ? "emerald" : "violet"} value={stats.dueFollowUps.length} label="follow-ups due" sub={stats.scheduledCount ? `${stats.scheduledCount} scheduled later` : "Nothing scheduled yet"} />
         </motion.section>
 
-        {/* Make a move */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-        >
+        {/* Today's quests */}
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}>
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-violet-300" />
-            <h2 className="text-lg font-semibold">Make a move</h2>
-            <span className="text-sm text-gray-500">— every action earns XP and feeds the pipeline</span>
+            <h2 className="text-lg font-semibold">Today’s engagement</h2>
+            <span className="text-sm text-gray-500">— check one off to earn XP · {stats.todayTotal} done today</span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {ACTION_TYPES.map((t) => {
-              const Icon = t.icon;
-              const a = ACCENT[t.accent];
+          <div className="grid gap-3">
+            {QUESTS.map((q) => {
+              const Icon = q.icon;
+              const a = ACCENT[q.accent];
+              const doneToday = stats.todayByQuest[q.key] || 0;
               return (
-                <button
-                  key={t.key}
-                  onClick={() => openComposer(t.key)}
-                  className="group text-left rounded-2xl p-5 bg-white/[0.04] border border-white/10 hover:border-white/20 hover:bg-white/[0.06] hover:-translate-y-0.5 transition-all backdrop-blur-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${a.bg} ring-1 ${a.ring}`}>
-                      <Icon className={`w-5 h-5 ${a.text}`} />
-                    </span>
-                    <span className={`text-xs font-semibold ${a.text}`}>+{t.xp} XP</span>
-                  </div>
-                  <p className="mt-3 font-semibold text-white">{t.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{t.blurb}</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Plus className="w-3 h-3" /> Log it
+                <div key={q.key} className="group flex items-center gap-4 rounded-2xl p-4 bg-white/[0.04] border border-white/10 hover:bg-white/[0.06] transition-colors backdrop-blur-sm">
+                  <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${a.bg} ring-1 ${a.ring}`}>
+                    <Icon className={`w-5 h-5 ${a.text}`} />
                   </span>
-                </button>
-              );
-            })}
-          </div>
-        </motion.section>
-
-        {/* Pipeline */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-sky-300" />
-            <h2 className="text-lg font-semibold">Pipeline</h2>
-            <span className="text-sm text-gray-500">— advance a contact to watch conversions trickle in</span>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {STAGES.map((stage) => {
-              const Icon = stage.icon;
-              const a = ACCENT[stage.accent];
-              const items = stats.byStage[stage.key] || [];
-              return (
-                <div
-                  key={stage.key}
-                  className="rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm flex flex-col min-h-[12rem]"
-                >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${a.bg}`}>
-                        <Icon className={`w-4 h-4 ${a.text}`} />
-                      </span>
-                      <span className="text-sm font-semibold text-white">{stage.label}</span>
+                      <p className="font-semibold text-white truncate">{q.label}</p>
+                      {doneToday > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-300">
+                          <Check className="w-3 h-3" /> {doneToday}× today
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs text-gray-400">{items.length}</span>
+                    <p className="text-xs text-gray-400 truncate">
+                      {q.sub}
+                      {q.followUpDays ? ` · circle back in ${q.followUpDays}d` : ""}
+                    </p>
                   </div>
-
-                  <div className="p-3 space-y-2 flex-1">
-                    <AnimatePresence initial={false}>
-                      {items.map((item) => {
-                        const def = ACTION_TYPES.find((t) => t.key === item.type);
-                        const canAdvance = stageIndex(item.stage) < STAGES.length - 1;
-                        return (
-                          <motion.div
-                            key={item.id}
-                            layout
-                            initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                            className="group rounded-xl bg-white/[0.04] border border-white/10 p-3"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-white truncate">
-                                  {item.contact}
-                                </p>
-                                <p className="text-[11px] text-gray-400 truncate">
-                                  {def?.label} · {item.channel}
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => removeActivity(item.id)}
-                                className="p-1 rounded bg-white/5 hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Remove"
-                              >
-                                <Trash2 className="w-3 h-3 text-red-400" />
-                              </button>
-                            </div>
-                            {item.notes && (
-                              <p className="mt-1.5 text-xs text-gray-400 line-clamp-2">{item.notes}</p>
-                            )}
-                            {canAdvance && (
-                              <button
-                                onClick={() => advance(item)}
-                                className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/5 hover:bg-white/10 py-1.5 text-xs font-medium text-gray-200 transition-colors"
-                              >
-                                Move to {STAGES[stageIndex(item.stage) + 1].label}
-                                <ArrowRight className="w-3 h-3" />
-                              </button>
-                            )}
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-
-                    {items.length === 0 && (
-                      <p className="text-xs text-gray-600 italic text-center py-6">
-                        Nothing here yet
-                      </p>
-                    )}
-                  </div>
+                  <span className={`hidden sm:block text-xs font-semibold ${a.text}`}>+{q.points} XP</span>
+                  <button
+                    onClick={() => handleQuestClick(q)}
+                    className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors ${a.solid}`}
+                  >
+                    <Check className="w-4 h-4" />
+                    {q.needsContact ? "Log" : "Done"}
+                  </button>
                 </div>
               );
             })}
           </div>
         </motion.section>
+
+        {/* Circle back */}
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
+          <div className="flex items-center gap-2 mb-4">
+            <RotateCcw className="w-5 h-5 text-emerald-300" />
+            <h2 className="text-lg font-semibold">Circle back</h2>
+            <span className="text-sm text-gray-500">— relationships ready for another touch</span>
+          </div>
+
+          <div className="grid gap-3">
+            <AnimatePresence initial={false}>
+              {stats.dueFollowUps.map((item) => {
+                const q = questFor(item.questKey);
+                const Icon = q?.icon || RotateCcw;
+                const a = ACCENT[q?.accent || "emerald"];
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.92 }}
+                    transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                    className="flex flex-wrap items-center gap-3 rounded-2xl p-4 bg-white/[0.04] border border-white/10 backdrop-blur-sm"
+                  >
+                    <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${a.bg} ring-1 ${a.ring}`}>
+                      <Icon className={`w-5 h-5 ${a.text}`} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-white truncate">
+                        {item.contact || "A contact"}
+                        {item.touches > 0 && (
+                          <span className="ml-2 text-[11px] text-gray-400">touch {item.touches + 1}/{MAX_TOUCHES}</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {item.label}
+                        {item.channel ? ` · ${item.channel}` : ""} · {daysAgo(item.lastTouchAt)}d ago
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => circleBack(item)} className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-400 transition-colors">
+                        <Check className="w-4 h-4" /> Did it
+                        <span className="text-emerald-100/80">+{FOLLOWUP_POINTS}</span>
+                      </button>
+                      <button onClick={() => snooze(item)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors" title="Snooze 3 days">
+                        <Clock className="w-4 h-4 text-gray-300" />
+                      </button>
+                      <button onClick={() => archive(item)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors" title="Done — stop circling back">
+                        <CheckCircle2 className="w-4 h-4 text-gray-300" />
+                      </button>
+                      <button onClick={() => remove(item.id)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors" title="Delete">
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {stats.dueFollowUps.length === 0 && (
+              <div className="rounded-2xl p-8 bg-white/[0.02] border border-dashed border-white/10 text-center">
+                <p className="text-sm text-gray-400">Nothing to circle back on right now.</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  DM someone or invite them to an interview above — they’ll resurface here in a few days.
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.section>
       </main>
 
-      {/* Composer modal */}
+      {/* Composer modal (for quests that involve a person) */}
       <AnimatePresence>
-        {composerType && (
+        {composerQuest && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setComposerType(null)}
+            onClick={() => setComposerQuest(null)}
           >
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -583,9 +553,8 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
               className="w-full max-w-md rounded-2xl bg-[#13141c] border border-white/10 p-6 shadow-2xl"
             >
               {(() => {
-                const def = ACTION_TYPES.find((t) => t.key === composerType);
-                const Icon = def.icon;
-                const a = ACCENT[def.accent];
+                const Icon = composerQuest.icon;
+                const a = ACCENT[composerQuest.accent];
                 return (
                   <>
                     <div className="flex items-center justify-between mb-5">
@@ -594,24 +563,26 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
                           <Icon className={`w-5 h-5 ${a.text}`} />
                         </span>
                         <div>
-                          <h3 className="font-semibold text-white">{def.label}</h3>
-                          <p className="text-xs text-gray-400">{def.blurb} · +{def.xp} XP</p>
+                          <h3 className="font-semibold text-white">{composerQuest.label}</h3>
+                          <p className="text-xs text-gray-400">
+                            +{composerQuest.points} XP · circle back in {composerQuest.followUpDays}d
+                          </p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => setComposerType(null)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10"
-                      >
+                      <button onClick={() => setComposerQuest(null)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10">
                         <X className="w-4 h-4 text-gray-300" />
                       </button>
                     </div>
 
-                    <label className="block text-xs text-gray-400 mb-1">Who / handle</label>
+                    <label className="block text-xs text-gray-400 mb-1">Who</label>
                     <input
                       value={form.contact}
                       onChange={(e) => setForm({ ...form, contact: e.target.value })}
                       placeholder="e.g. @concrete_carl, Jane (estimator)"
                       autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") logQuest(composerQuest, form);
+                      }}
                       className="w-full mb-4 rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-400/60"
                     />
 
@@ -622,9 +593,7 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
                       className="w-full mb-4 rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-400/60"
                     >
                       {CHANNELS.map((c) => (
-                        <option key={c} value={c} className="bg-[#13141c]">
-                          {c}
-                        </option>
+                        <option key={c} value={c} className="bg-[#13141c]">{c}</option>
                       ))}
                     </select>
 
@@ -633,15 +602,12 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
                       rows={2}
-                      placeholder="What you shared / asked"
+                      placeholder="What you said / asked"
                       className="w-full mb-5 rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-400/60"
                     />
 
-                    <button
-                      onClick={logMove}
-                      className={`w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors ${a.solid}`}
-                    >
-                      Log it · +{def.xp} XP
+                    <button onClick={() => logQuest(composerQuest, form)} className={`w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors ${a.solid}`}>
+                      Log it · +{composerQuest.points} XP
                     </button>
                   </>
                 );
@@ -655,7 +621,7 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Small presentational helpers                                        */
+/* Presentational helpers                                              */
 /* ------------------------------------------------------------------ */
 
 function StatTile({ icon: Icon, accent, value, label, sub }) {
@@ -674,7 +640,6 @@ function StatTile({ icon: Icon, accent, value, label, sub }) {
   );
 }
 
-// Number that pops when it changes — cheap "count" juice.
 function PopNumber({ value, className = "", prefix = "" }) {
   return (
     <span className={`relative inline-block ${className}`}>
