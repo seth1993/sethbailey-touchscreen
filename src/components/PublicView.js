@@ -1,24 +1,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, Code, Zap, Send, Users, TrendingUp, Menu, X } from "lucide-react";
+import { Code, Zap, Send, TrendingUp, Menu, X, ArrowRight, ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import plane from '../plane.png';
 import { analytics } from '../firebase';
 import { logEvent } from 'firebase/analytics';
-
-// Custom Seth Bailey Logo/Icon Component
-const SethBaileyIcon = ({ className = "w-8 h-8" }) => (
-  <svg
-    viewBox="0 0 40 40"
-    className={className}
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <circle cx="20" cy="20" r="18" stroke="currentColor" strokeWidth="2" fill="none" />
-    <path d="M12 15L20 8L28 15L25 20L20 25L15 20Z" fill="currentColor" opacity="0.8" />
-    <path d="M8 20H14M26 20H32M20 8V14M20 26V32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="20" cy="20" r="2" fill="currentColor" />
-  </svg>
-);
 
 const projects = [
   {
@@ -149,6 +134,7 @@ const projects = [
   },
 ];
 
+
 const PublicView = ({ onSignIn }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -173,35 +159,33 @@ const PublicView = ({ onSignIn }) => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-black text-white">
-      <header className="sticky top-0 z-20 bg-black/80 backdrop-blur border-b border-gray-800">
-        <div className="mx-auto max-w-[1600px] px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen w-full bg-neutral-950 text-white antialiased text-left">
+      <header className="fixed top-0 inset-x-0 z-30 bg-neutral-950/70 backdrop-blur-md border-b border-white/5">
+        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/f35-logo.png" alt="F-35 Logo" className="w-10 h-10 object-contain" />
-            <h1 className="text-xl md:text-2xl lg:text-3xl tracking-tight lettering-wide">
-              SETH BAILEY
-            </h1>
+            <img src="/f35-logo.png" alt="F-35 Logo" className="w-9 h-9 object-contain" />
+            <span className="text-sm font-semibold tracking-[0.25em]">SETH BAILEY</span>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center gap-8">
             <a
               href="#projects"
-              className="text-gray-300 hover:text-white transition-colors cursor-pointer"
+              className="text-xs tracking-[0.2em] text-gray-400 hover:text-white transition-colors"
               onClick={(e) => scrollToSection(e, 'projects')}
             >
               PROJECTS
             </a>
             <a
               href="#contact"
-              className="text-gray-300 hover:text-white transition-colors cursor-pointer"
+              className="text-xs tracking-[0.2em] text-gray-400 hover:text-white transition-colors"
               onClick={(e) => scrollToSection(e, 'contact')}
             >
               CONTACT
             </a>
             <button
               onClick={onSignIn}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="text-xs tracking-[0.15em] px-4 py-2 rounded-full border border-white/15 text-gray-200 hover:bg-white hover:text-black transition-colors"
             >
               SIGN IN
             </button>
@@ -225,19 +209,19 @@ const PublicView = ({ onSignIn }) => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-gray-800 bg-black/95 backdrop-blur"
+              className="md:hidden border-t border-white/5 bg-neutral-950/95 backdrop-blur"
             >
-              <nav className="flex flex-col px-6 py-4 space-y-4">
+              <nav className="flex flex-col px-6 py-4 space-y-1">
                 <a
                   href="#projects"
-                  className="text-gray-300 hover:text-white transition-colors cursor-pointer py-2 text-lg"
+                  className="text-gray-300 hover:text-white transition-colors py-3 text-sm tracking-[0.2em]"
                   onClick={(e) => scrollToSection(e, 'projects')}
                 >
                   PROJECTS
                 </a>
                 <a
                   href="#contact"
-                  className="text-gray-300 hover:text-white transition-colors cursor-pointer py-2 text-lg"
+                  className="text-gray-300 hover:text-white transition-colors py-3 text-sm tracking-[0.2em]"
                   onClick={(e) => scrollToSection(e, 'contact')}
                 >
                   CONTACT
@@ -247,7 +231,7 @@ const PublicView = ({ onSignIn }) => {
                     setMobileMenuOpen(false);
                     onSignIn();
                   }}
-                  className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-left text-lg font-semibold"
+                  className="mt-2 px-4 py-3 rounded-full border border-white/15 text-sm tracking-[0.15em] text-left hover:bg-white hover:text-black transition-colors"
                 >
                   SIGN IN
                 </button>
@@ -257,49 +241,86 @@ const PublicView = ({ onSignIn }) => {
         </AnimatePresence>
       </header>
 
-      {/* Header Image Section */}
-      <div className="relative w-full h-96 overflow-hidden bg-black">
-        <div className="relative h-full w-full flex">
-          <div className="flex-1 bg-black flex items-center">
-            <div className="mx-auto max-w-[1600px] text-white text-left px-6">
-              <div className="flex items-center gap-4 mb-4">
-                {/* <img src="/f35-logo.png" alt="F-35 Logo" className="w-16 h-16 object-contain" /> */}
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tight">
-                  SETH BAILEY
-                </h2>
-              </div>
-              <p className="text-base md:text-lg text-gray-300 max-w-lg">
-                Building the future with AI. Bringing your projects to life.
-              </p>
+      {/* Hero */}
+      <section className="relative min-h-[92vh] flex items-center overflow-hidden">
+        <img
+          src={plane}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/80 to-neutral-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-transparent to-neutral-950/60" />
+
+        <div className="relative z-10 mx-auto max-w-7xl px-6 pt-24 w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="max-w-2xl"
+          >
+            <p className="inline-flex items-center gap-2 text-xs tracking-[0.3em] text-sky-300/90 border border-sky-400/20 bg-sky-400/5 rounded-full px-4 py-2 mb-8">
+              FULL-STACK DEVELOPER · AI BUILDER
+            </p>
+            <h1 className="text-5xl md:text-7xl font-light tracking-tight leading-[1.05] mb-6">
+              Building the future
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-indigo-400 font-normal">
+                with AI.
+              </span>
+            </h1>
+            <p className="text-lg md:text-xl text-gray-400 max-w-lg leading-relaxed mb-10">
+              I design and ship products that put artificial intelligence to work —
+              from construction tech to planning tools. Bringing your projects to life.
+            </p>
+            <div className="flex flex-wrap items-center gap-4">
+              <a
+                href="#projects"
+                onClick={(e) => scrollToSection(e, 'projects')}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black text-sm font-semibold hover:bg-gray-200 transition-colors"
+              >
+                View projects
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              <a
+                href="#contact"
+                onClick={(e) => scrollToSection(e, 'contact')}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/15 text-sm font-semibold text-gray-200 hover:bg-white/10 transition-colors"
+              >
+                Get in touch
+              </a>
             </div>
-          </div>
-          <div className="flex-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent z-10"></div>
-            <img
-              src={plane}
-              alt="Header"
-              className="w-full h-full object-cover"
-            />
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </section>
 
-      {/* Contact Section */}
-      <div id="contact">
-        <ContactSection />
-      </div>
+      {/* Projects */}
+      <main id="projects" className="mx-auto max-w-7xl px-6 py-24 scroll-mt-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-14"
+        >
+          <p className="text-xs tracking-[0.3em] text-sky-400 mb-3">SELECTED WORK</p>
+          <h2 className="text-3xl md:text-5xl font-light tracking-tight">Projects</h2>
+        </motion.div>
 
-      <main id="projects" className="mx-auto max-w-[1600px] px-4 sm:px-6 py-8 bg-black">
-        <div className="space-y-6">
+        <div className="space-y-10">
           {projects.map((project, index) => (
-            <FullWidthTile
+            <ProjectCard
               key={project.id}
               project={project}
+              index={index}
               isReversed={index % 2 === 1}
             />
           ))}
         </div>
       </main>
+
+      {/* Contact Section */}
+      <div id="contact" className="scroll-mt-20">
+        <ContactSection />
+      </div>
 
       {/* Footer */}
       <Footer scrollToSection={scrollToSection} />
@@ -307,82 +328,74 @@ const PublicView = ({ onSignIn }) => {
   );
 };
 
-function FullWidthTile({ project, isReversed }) {
+function ProjectCard({ project, index, isReversed }) {
   return (
     <motion.div
-      className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-3xl bg-neutral-900 border border-white/5 hover:border-white/10 transition-colors"
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6 }}
     >
-      <div className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-stretch min-h-[500px]`}>
-        {/* Image Side with Fade Overlay */}
-        <div className="w-full lg:w-1/2 relative overflow-hidden min-h-[300px] lg:min-h-[500px]">
+      <div className={`flex flex-col ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-stretch`}>
+        {/* Image side */}
+        <div className="w-full lg:w-1/2 relative overflow-hidden min-h-[260px] lg:min-h-[460px]">
           {project.image && (
             <>
               <img
                 src={project.image}
                 alt={project.name}
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-[1.03]"
               />
-              {/* Strong Fade to Content Side - Only on Desktop */}
-              <div className={`absolute inset-0 hidden lg:block bg-gradient-to-${isReversed ? 'l' : 'r'} from-transparent via-gray-900/60 to-gray-900`} />
-              {/* Dark overlay for mobile */}
-              <div className="absolute inset-0 lg:hidden bg-black/30" />
+              <div
+                className={`absolute inset-0 hidden lg:block ${
+                  isReversed
+                    ? 'bg-gradient-to-l from-transparent via-neutral-900/40 to-neutral-900'
+                    : 'bg-gradient-to-r from-transparent via-neutral-900/40 to-neutral-900'
+                }`}
+              />
+              <div className="absolute inset-0 lg:hidden bg-gradient-to-t from-neutral-900 via-neutral-900/20 to-transparent" />
             </>
           )}
         </div>
 
-        {/* Content Side */}
-        <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-gray-900 to-gray-800 relative">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)`
-            }}></div>
+        {/* Content side */}
+        <div className="w-full lg:w-1/2 p-8 lg:p-14 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-xs font-mono text-gray-600">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <span className="h-px w-8 bg-gray-700" />
+            <span className="text-[11px] uppercase tracking-[0.25em] text-sky-400/90">
+              {project.owner}
+            </span>
           </div>
 
-          <div className="relative z-10">
-            {/* Header with Icon */}
-            <div className="flex items-start gap-4 mb-6">
-              <div className="p-3 bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30">
-                <FolderKanban className="h-5 w-5 lg:h-6 lg:w-6 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl lg:text-4xl font-bold tracking-tight text-white mb-2">{project.name}</h2>
-                <div className="flex items-center gap-2">
-                  <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                  <p className="text-xs lg:text-sm uppercase tracking-widest text-gray-400">{project.owner}</p>
-                </div>
-              </div>
+          <h2 className="text-3xl lg:text-4xl font-light tracking-tight text-white mb-3">
+            {project.name}
+          </h2>
+
+          <p className="text-base lg:text-lg text-gray-300 leading-relaxed mb-4">
+            {project.summary}
+          </p>
+
+          <p className="text-sm lg:text-[15px] text-gray-500 leading-relaxed mb-8">
+            {project.description}
+          </p>
+
+          {project.url && (
+            <div>
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors"
+              >
+                Visit site
+                <ExternalLink className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </a>
             </div>
-
-            {/* Summary */}
-            <p className="text-lg lg:text-xl text-gray-300 leading-relaxed mb-4 font-medium">
-              {project.summary}
-            </p>
-
-            {/* Extended Description */}
-            <p className="text-sm lg:text-base text-gray-400 leading-relaxed mb-6 lg:mb-8">
-              {project.description}
-            </p>
-
-            {/* CTA Button */}
-            {project.url && (
-              <div>
-                <a 
-                  href={project.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 lg:px-6 lg:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm lg:text-base font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 rounded"
-                >
-                  <span>Visit Site</span>
-                  <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </motion.div>
@@ -424,8 +437,6 @@ function ContactSection() {
         },
         body: JSON.stringify(formData),
       });
-
-      const result = await response.json();
 
       if (response.ok) {
         // Success - track in analytics
@@ -476,276 +487,153 @@ function ContactSection() {
     }
   };
 
-  const floatingElements = [
-    { icon: Code, delay: 0 },
-    { icon: Zap, delay: 0.2 },
-    { icon: Users, delay: 0.4 },
-    { icon: TrendingUp, delay: 0.6 }
+  const services = [
+    {
+      icon: Code,
+      iconColor: 'text-sky-400',
+      iconBg: 'bg-sky-500/10 border-sky-500/20',
+      title: 'Full-Stack Development',
+      blurb: 'React, Node.js, AI Integration, Mobile Apps'
+    },
+    {
+      icon: Zap,
+      iconColor: 'text-indigo-400',
+      iconBg: 'bg-indigo-500/10 border-indigo-500/20',
+      title: 'Performance Optimization',
+      blurb: 'Speed, SEO, Conversion Rate Optimization'
+    },
+    {
+      icon: TrendingUp,
+      iconColor: 'text-emerald-400',
+      iconBg: 'bg-emerald-500/10 border-emerald-500/20',
+      title: 'Business Growth',
+      blurb: 'Marketing Automation, Analytics, Revenue Optimization'
+    }
   ];
 
   return (
-    <section className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 py-20 overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {floatingElements.map((element, index) => (
-          <motion.div
-            key={index}
-            className="absolute opacity-10"
-            initial={{
-              x: Math.random() * 1200,
-              y: Math.random() * 800,
-              rotate: 0
-            }}
-            animate={{
-              x: [
-                Math.random() * 1200,
-                Math.random() * 1200,
-                Math.random() * 1200
-              ],
-              y: [
-                Math.random() * 800,
-                Math.random() * 800,
-                Math.random() * 800
-              ],
-              rotate: [0, 180, 360],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{
-              duration: 20 + Math.random() * 10,
-              repeat: Infinity,
-              delay: element.delay,
-              ease: "linear"
-            }}
-          >
-            <element.icon className="w-16 h-16 text-blue-500" />
-          </motion.div>
-        ))}
-      </div>
-
-      {/* 3D Grid Background */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent transform -skew-y-12"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/20 to-transparent transform skew-x-12"></div>
+    <section className="relative py-28 overflow-hidden border-t border-white/5">
+      {/* Ambient glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-40 left-1/4 w-[500px] h-[500px] rounded-full bg-sky-500/10 blur-[140px]" />
+        <div className="absolute -bottom-40 right-1/4 w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-[140px]" />
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-16 items-start">
           {/* Left Side - Content */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-white"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-white lg:sticky lg:top-28"
           >
-            <motion.h2
-              className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent leading-tight pb-2"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              Let's Build Something Amazing
-            </motion.h2>
+            <p className="text-xs tracking-[0.3em] text-sky-400 mb-3">CONTACT</p>
+            <h2 className="text-3xl md:text-5xl font-light tracking-tight leading-tight mb-6">
+              Let's build something
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-indigo-400">
+                amazing together.
+              </span>
+            </h2>
 
-            <motion.p
-              className="text-xl text-gray-300 mb-8 leading-relaxed"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-            >
-              Looking for a developer who can bring your vision to life? I specialize in creating
-              innovative solutions that drive real results. From AI-powered applications to
-              modern web experiences, let's collaborate on your next big idea.
-            </motion.p>
+            <p className="text-lg text-gray-400 mb-10 leading-relaxed max-w-md">
+              Looking for a developer who can bring your vision to life? From AI-powered
+              applications to modern web experiences, let's collaborate on your next big idea.
+            </p>
 
-            <motion.div
-              className="space-y-4"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <Code className="w-6 h-6 text-blue-400" />
+            <div className="space-y-3">
+              {services.map((service) => (
+                <div
+                  key={service.title}
+                  className="flex items-center gap-4 rounded-2xl border border-white/5 bg-white/[0.03] px-5 py-4"
+                >
+                  <div className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 ${service.iconBg}`}>
+                    <service.icon className={`w-5 h-5 ${service.iconColor}`} />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-sm">{service.title}</h3>
+                    <p className="text-gray-500 text-sm">{service.blurb}</p>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <h3 className="font-semibold">Full-Stack Development</h3>
-                  <p className="text-gray-400 text-sm">React, Node.js, AI Integration, Mobile Apps</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
-                  <Zap className="w-6 h-6 text-purple-400" />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-semibold">Performance Optimization</h3>
-                  <p className="text-gray-400 text-sm">Speed, SEO, Conversion Rate Optimization</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-green-400" />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-semibold">Business Growth</h3>
-                  <p className="text-gray-400 text-sm">Marketing Automation, Analytics, Revenue Optimization</p>
-                </div>
-              </div>
-            </motion.div>
+              ))}
+            </div>
           </motion.div>
 
           {/* Right Side - Contact Form */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.15 }}
           >
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <div className="bg-white/[0.04] backdrop-blur-lg rounded-3xl p-8 border border-white/10">
               {/* Success/Error Message */}
               <AnimatePresence>
                 {submitStatus && (
                   <motion.div
-                    initial={{ opacity: 0, y: -20, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className={`mb-6 p-6 rounded-xl border-2 ${submitStatus === 'success'
-                        ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-emerald-400/50 text-white'
-                        : 'bg-gradient-to-r from-red-500/20 to-rose-500/20 border-red-400/50 text-white'
+                    initial={{ opacity: 0, y: -12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25 }}
+                    className={`mb-6 p-4 rounded-2xl border flex items-center gap-3 ${submitStatus === 'success'
+                        ? 'bg-emerald-500/10 border-emerald-400/30'
+                        : 'bg-red-500/10 border-red-400/30'
                       }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.2, type: "spring", stiffness: 400 }}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center ${submitStatus === 'success'
-                            ? 'bg-emerald-500/30'
-                            : 'bg-red-500/30'
-                          }`}
-                      >
-                        {submitStatus === 'success' ? (
-                          <motion.svg
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{ delay: 0.3, duration: 0.5 }}
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </motion.svg>
-                        ) : (
-                          <motion.svg
-                            initial={{ rotate: -90, scale: 0 }}
-                            animate={{ rotate: 0, scale: 1 }}
-                            transition={{ delay: 0.3, type: "spring" }}
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </motion.svg>
-                        )}
-                      </motion.div>
-                      <div>
-                        <motion.h3
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.4 }}
-                          className="font-bold text-lg relative"
-                        >
-                          {submitStatus === 'success' ? '🚀 Message Sent!' : '😵 Oops!'}
-                          {submitStatus === 'success' && (
-                            <div className="absolute -top-2 -right-2">
-                              {[...Array(6)].map((_, i) => (
-                                <motion.div
-                                  key={i}
-                                  initial={{ scale: 0, x: 0, y: 0 }}
-                                  animate={{
-                                    scale: [0, 1, 0],
-                                    x: Math.cos(i * 60 * Math.PI / 180) * 20,
-                                    y: Math.sin(i * 60 * Math.PI / 180) * 20
-                                  }}
-                                  transition={{
-                                    delay: 0.6 + i * 0.1,
-                                    duration: 1.5,
-                                    ease: "easeOut"
-                                  }}
-                                  className="absolute w-1 h-1 bg-yellow-400 rounded-full"
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </motion.h3>
-                        <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.5 }}
-                          className="text-sm opacity-90"
-                        >
-                          {submitStatus === 'success'
-                            ? "Thanks for reaching out! I'll get back to you within 24 hours. Let's build something amazing together! 🎉"
-                            : "Something went wrong. Please try again or reach out directly. Don't give up - great things are coming! 💪"
-                          }
-                        </motion.p>
-                      </div>
+                    {submitStatus === 'success' ? (
+                      <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    )}
+                    <div>
+                      <h3 className="font-semibold text-sm">
+                        {submitStatus === 'success' ? 'Message sent!' : 'Something went wrong'}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {submitStatus === 'success'
+                          ? "Thanks for reaching out — I'll get back to you within 24 hours."
+                          : 'Please try again, or reach out on LinkedIn.'}
+                      </p>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Your Name</label>
-                  <motion.input
-                    whileFocus={{ scale: isSubmitting ? 1 : 1.02 }}
+                  <label className="block text-xs font-medium tracking-wide text-gray-400 mb-2">YOUR NAME</label>
+                  <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-neutral-950/60 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="John Doe"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Email</label>
-                  <motion.input
-                    whileFocus={{ scale: isSubmitting ? 1 : 1.02 }}
+                  <label className="block text-xs font-medium tracking-wide text-gray-400 mb-2">EMAIL</label>
+                  <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-neutral-950/60 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="john@example.com"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Project Type</label>
-                  <motion.select
-                    whileFocus={{ scale: isSubmitting ? 1 : 1.02 }}
+                  <label className="block text-xs font-medium tracking-wide text-gray-400 mb-2">PROJECT TYPE</label>
+                  <select
                     value={formData.project}
                     onChange={(e) => setFormData({ ...formData, project: e.target.value })}
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-neutral-950/60 border border-white/10 rounded-xl text-white focus:outline-none focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     required
                   >
                     <option value="">Select a project type</option>
@@ -754,42 +642,39 @@ function ContactSection() {
                     <option value="ai-integration">AI Integration</option>
                     <option value="e-commerce">E-commerce Platform</option>
                     <option value="custom">Custom Solution</option>
-                  </motion.select>
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Tell me about your project</label>
-                  <motion.textarea
-                    whileFocus={{ scale: isSubmitting ? 1 : 1.02 }}
+                  <label className="block text-xs font-medium tracking-wide text-gray-400 mb-2">TELL ME ABOUT YOUR PROJECT</label>
+                  <textarea
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     disabled={isSubmitting}
                     rows={4}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-neutral-950/60 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/40 transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Describe your project, timeline, and any specific requirements..."
                     required
                   />
                 </div>
 
-                <motion.button
+                <button
                   type="submit"
                   disabled={isSubmitting}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white text-black font-semibold py-3.5 px-6 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400/50 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                       Sending...
                     </>
                   ) : (
                     <>
-                      <Send className="w-5 h-5" />
-                      Start Our Collaboration
+                      <Send className="w-4 h-4" />
+                      Send message
                     </>
                   )}
-                </motion.button>
+                </button>
               </form>
             </div>
           </motion.div>
@@ -803,76 +688,65 @@ function Footer({ scrollToSection }) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="relative bg-black text-white overflow-hidden">
-      <div className="relative w-full h-96">
-        <div className="absolute inset-0 flex">
-          <div className="flex-1 bg-black flex items-center">
-            <div className="text-white max-w-md mx-auto max-w-[1600px] px-6 text-left">
-
-              {/* Footer Links */}
-              <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
-                  <ul className="space-y-2">
-                    <li>
-                      <a
-                        href="#projects"
-                        onClick={(e) => scrollToSection(e, 'projects')}
-                        className="text-gray-400 hover:text-white transition-colors cursor-pointer"
-                      >
-                        Projects
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="#contact"
-                        onClick={(e) => scrollToSection(e, 'contact')}
-                        className="text-gray-400 hover:text-white transition-colors cursor-pointer"
-                      >
-                        Contact
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Services</h3>
-                  <ul className="space-y-2 text-gray-400">
-                    <li>Web Development</li>
-                    <li>Mobile Apps</li>
-                    <li>AI Integration</li>
-                    <li>E-commerce</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Social Links */}
-              <div className="flex space-x-6 mb-6">
-                <a href="https://www.linkedin.com/in/seth-bailey/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                  LinkedIn
-                </a>
-                <a href="https://github.com/seth1993" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                  GitHub
-                </a>
-                {/* <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  Twitter
-                </a> */}
-              </div>
-
-              {/* Copyright */}
-              <div className="text-sm text-gray-500">
-                © {currentYear} Seth Bailey. All rights reserved.
-              </div>
+    <footer className="border-t border-white/5 bg-neutral-950">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid gap-10 md:grid-cols-3 mb-12">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <img src="/f35-logo.png" alt="F-35 Logo" className="w-8 h-8 object-contain" />
+              <span className="text-sm font-semibold tracking-[0.25em]">SETH BAILEY</span>
             </div>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
+              Building the future with AI. Bringing your projects to life.
+            </p>
           </div>
 
-          <div className="flex-1 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent z-10"></div>
-            <img
-              src={plane}
-              alt="Footer Background"
-              className="w-full h-full object-cover opacity-60"
-            />
+          <div>
+            <h3 className="text-xs tracking-[0.25em] text-gray-500 mb-4">QUICK LINKS</h3>
+            <ul className="space-y-2.5">
+              <li>
+                <a
+                  href="#projects"
+                  onClick={(e) => scrollToSection(e, 'projects')}
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Projects
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#contact"
+                  onClick={(e) => scrollToSection(e, 'contact')}
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Contact
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xs tracking-[0.25em] text-gray-500 mb-4">SERVICES</h3>
+            <ul className="space-y-2.5 text-sm text-gray-400">
+              <li>Web Development</li>
+              <li>Mobile Apps</li>
+              <li>AI Integration</li>
+              <li>E-commerce</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-8 border-t border-white/5">
+          <div className="flex gap-6">
+            <a href="https://www.linkedin.com/in/seth-bailey/" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-white transition-colors">
+              LinkedIn
+            </a>
+            <a href="https://github.com/seth1993" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-white transition-colors">
+              GitHub
+            </a>
+          </div>
+          <div className="text-sm text-gray-600">
+            © {currentYear} Seth Bailey. All rights reserved.
           </div>
         </div>
       </div>

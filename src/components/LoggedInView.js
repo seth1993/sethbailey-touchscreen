@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Eye,
@@ -6,17 +6,15 @@ import {
   Target,
   TrendingUp,
   Users,
-  Activity,
   CheckCircle2,
-  Sparkles,
+  Circle,
   Plus,
   Edit2,
   Trash2,
   X,
   Save,
+  Flame,
 } from "lucide-react";
-import Tiles from "./tiles";
-import inspirationImage from "../inspiration.png";
 import { db } from "../firebase";
 import {
   collection,
@@ -28,14 +26,17 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import VisitorAnalytics from "./VisitorAnalytics";
 
-const LoggedInView = ({
-  onLogout,
-  onToggleView,
-  showPublicView,
-  highImpactSummary,
-}) => {
-  // State for managing items
+const PLANFUL_SEED_TASKS = [
+  "Work on userflow",
+  "User subscription",
+  "Landing page",
+  "App review",
+  "Getting users to test",
+];
+
+const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
   const [projectItems, setProjectItems] = useState({
     bidfolder: [],
     planful: [],
@@ -45,8 +46,8 @@ const LoggedInView = ({
   const [addingToProject, setAddingToProject] = useState(null);
   const [newItemText, setNewItemText] = useState("");
   const [editItemText, setEditItemText] = useState("");
+  const seeded = useRef(false);
 
-  // Load items from Firestore on mount
   useEffect(() => {
     loadItemsFromFirestore();
   }, []);
@@ -60,12 +61,31 @@ const LoggedInView = ({
       const querySnapshot = await getDocs(itemsQuery);
       const items = { bidfolder: [], planful: [], fusion: [] };
 
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
         if (items[data.projectId]) {
-          items[data.projectId].push({ id: doc.id, ...data });
+          items[data.projectId].push({ id: docSnap.id, ...data });
         }
       });
+
+      // Seed Planful tasks once if none exist
+      if (items.planful.length === 0 && !seeded.current) {
+        seeded.current = true;
+        for (const text of PLANFUL_SEED_TASKS) {
+          const docRef = await addDoc(collection(db, "projectItems"), {
+            projectId: "planful",
+            text,
+            completed: false,
+            createdAt: new Date().toISOString(),
+          });
+          items.planful.push({
+            id: docRef.id,
+            projectId: "planful",
+            text,
+            completed: false,
+          });
+        }
+      }
 
       setProjectItems(items);
     } catch (error) {
@@ -75,22 +95,25 @@ const LoggedInView = ({
 
   const handleAddItem = async (projectId) => {
     if (!newItemText.trim()) return;
-
     try {
       const docRef = await addDoc(collection(db, "projectItems"), {
         projectId,
         text: newItemText.trim(),
+        completed: false,
         createdAt: new Date().toISOString(),
       });
-
       setProjectItems((prev) => ({
         ...prev,
         [projectId]: [
           ...prev[projectId],
-          { id: docRef.id, projectId, text: newItemText.trim() },
+          {
+            id: docRef.id,
+            projectId,
+            text: newItemText.trim(),
+            completed: false,
+          },
         ],
       }));
-
       setNewItemText("");
       setAddingToProject(null);
     } catch (error) {
@@ -98,23 +121,39 @@ const LoggedInView = ({
     }
   };
 
+  const handleToggleComplete = async (itemId, projectId) => {
+    const item = projectItems[projectId].find((i) => i.id === itemId);
+    if (!item) return;
+    const newCompleted = !item.completed;
+    try {
+      await updateDoc(doc(db, "projectItems", itemId), {
+        completed: newCompleted,
+        updatedAt: new Date().toISOString(),
+      });
+      setProjectItems((prev) => ({
+        ...prev,
+        [projectId]: prev[projectId].map((i) =>
+          i.id === itemId ? { ...i, completed: newCompleted } : i
+        ),
+      }));
+    } catch (error) {
+      console.error("Error toggling item:", error);
+    }
+  };
+
   const handleEditItem = async (itemId, projectId) => {
     if (!editItemText.trim()) return;
-
     try {
-      const itemRef = doc(db, "projectItems", itemId);
-      await updateDoc(itemRef, {
+      await updateDoc(doc(db, "projectItems", itemId), {
         text: editItemText.trim(),
         updatedAt: new Date().toISOString(),
       });
-
       setProjectItems((prev) => ({
         ...prev,
         [projectId]: prev[projectId].map((item) =>
           item.id === itemId ? { ...item, text: editItemText.trim() } : item
         ),
       }));
-
       setEditingItem(null);
       setEditItemText("");
     } catch (error) {
@@ -125,7 +164,6 @@ const LoggedInView = ({
   const handleDeleteItem = async (itemId, projectId) => {
     try {
       await deleteDoc(doc(db, "projectItems", itemId));
-
       setProjectItems((prev) => ({
         ...prev,
         [projectId]: prev[projectId].filter((item) => item.id !== itemId),
@@ -155,25 +193,12 @@ const LoggedInView = ({
     setNewItemText("");
   };
 
-  // High-impact summary can come from Linear / API later.
-  const totalThisWeek = highImpactSummary?.totalThisWeek ?? 0;
-  const weeklyTarget = highImpactSummary?.weeklyTarget ?? 10;
+  // Totals
+  const allItems = Object.values(projectItems).flat();
+  const totalItems = allItems.length;
+  const completedItems = allItems.filter((i) => i.completed).length;
+  const progressPct = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
-  const progress =
-    weeklyTarget > 0
-      ? Math.max(
-          0,
-          Math.min(100, Math.round((totalThisWeek / weeklyTarget) * 100))
-        )
-      : 0;
-
-  const byProject = highImpactSummary?.byProject ?? {
-    bidfolder: 0,
-    planful: 0,
-    fusion: 0,
-  };
-
-  // Best guess at your high-impact work per project
   const projectConfigs = [
     {
       id: "bidfolder",
@@ -181,7 +206,8 @@ const LoggedInView = ({
       icon: TrendingUp,
       color: "text-blue-400",
       bg: "bg-blue-500/10",
-      description: "Get in front of more bid teams and stay top-of-mind.",
+      check: "text-blue-400",
+      accent: "border-blue-500/20",
     },
     {
       id: "planful",
@@ -189,7 +215,8 @@ const LoggedInView = ({
       icon: Target,
       color: "text-purple-400",
       bg: "bg-purple-500/10",
-      description: "Make it stable and delightful for real users.",
+      check: "text-purple-400",
+      accent: "border-purple-500/20",
     },
     {
       id: "fusion",
@@ -197,215 +224,144 @@ const LoggedInView = ({
       icon: Users,
       color: "text-green-400",
       bg: "bg-green-500/10",
-      description: "Ship the pieces that make weekly project reviews effortless.",
+      check: "text-green-400",
+      accent: "border-green-500/20",
     },
   ];
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Header with controls */}
-      <div className="bg-neutral-900/80 backdrop-blur border-b border-neutral-700">
-        <div className="mx-auto max-w-[1600px] px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl text-white tracking-[0.2em]">
-            DASHBOARD
+      {/* Header */}
+      <div className="bg-neutral-900/80 backdrop-blur border-b border-neutral-800">
+        <div className="mx-auto max-w-4xl px-6 py-4 flex justify-between items-center">
+          <h1 className="text-lg text-white font-medium tracking-wide">
+            Tasks &amp; Thoughts
           </h1>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button
               onClick={onToggleView}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
             >
-              <Eye className="w-4 h-4" />
-              {showPublicView ? "Back to Dashboard" : "View Public Page"}
+              <Eye className="w-3.5 h-3.5" />
+              {showPublicView ? "Back" : "Public Page"}
             </button>
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-400 hover:text-red-400 bg-neutral-800 hover:bg-neutral-800/80 rounded-lg transition-colors"
             >
-              <LogOut className="w-4 h-4" />
-              Logout
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="max-w-[1600px] mx-auto px-6 py-8 space-y-8">
-        {/* High-impact metric + definition + inspiration */}
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+        {/* Progress banner */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]"
+          transition={{ duration: 0.35 }}
+          className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800"
         >
-          {/* High-impact summary */}
-          <div className="bg-neutral-900 rounded-2xl p-6 md:p-8 border border-neutral-800">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3 text-left">
-                <div className="bg-emerald-500/20 p-3 rounded-xl">
-                  <Activity className="w-6 h-6 text-emerald-400" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">
-                    Weekly High-Impact Work
-                  </h2>
-                  <p className="text-sm text-gray-400">
-                    Moves that actually push Bidfolder, Planful, and Fusion
-                    toward your goals.
-                  </p>
-                </div>
-              </div>
-              <div className="hidden md:flex flex-col items-end">
-                <span className="text-xs uppercase text-gray-400">
-                  This Week
-                </span>
-                <span className="text-3xl font-semibold text-white">
-                  {totalThisWeek}
-                  <span className="text-gray-500 text-lg"> / {weeklyTarget}</span>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="bg-emerald-500/15 p-3 rounded-xl">
+              <Flame className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div className="flex-1">
+              <div className="text-3xl font-bold text-white">
+                {completedItems}
+                <span className="text-lg text-gray-500 font-normal">
+                  {" "}
+                  / {totalItems} done
                 </span>
               </div>
-            </div>
-
-            {/* Mobile metric */}
-            <div className="md:hidden flex flex-col gap-1 mb-4">
-              <span className="text-xs uppercase text-gray-400">
-                This Week
-              </span>
-              <span className="text-2xl font-semibold text-white">
-                {totalThisWeek}{" "}
-                <span className="text-gray-500 text-base">/ {weeklyTarget}</span>
-              </span>
-            </div>
-
-            {/* Progress bar */}
-            <div className="mb-4">
-              <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0</span>
-                <span>{weeklyTarget} moves</span>
-              </div>
-            </div>
-
-            {/* Per-project mini summary */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-              {projectConfigs.map((project) => {
-                const Icon = project.icon;
-                return (
-                  <div
-                    key={project.id}
-                    className="flex items-center justify-between bg-neutral-800/60 border border-neutral-700 rounded-xl px-4 py-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${project.bg}`}
-                      >
-                        <Icon className={`w-4 h-4 ${project.color}`} />
-                      </span>
-                      <span className="text-gray-200 text-sm">
-                        {project.name}
-                      </span>
-                    </div>
-                    <span className="text-gray-400 text-sm">
-                      {byProject?.[project.id] ?? 0}
-                      <span className="text-xs text-gray-500 ml-1">
-                        moves
-                      </span>
-                    </span>
-                  </div>
-                );
-              })}
+              <p className="text-sm text-gray-400 mt-0.5">
+                {completedItems === 0
+                  ? "Fresh start. Pick one and go."
+                  : completedItems < Math.ceil(totalItems * 0.5)
+                  ? "Building momentum — keep going."
+                  : completedItems < totalItems
+                  ? "More than halfway. You're crushing it."
+                  : "Everything knocked out. Add what's next."}
+              </p>
             </div>
           </div>
-
-          {/* Inspiration / definition card */}
-          <div className="bg-neutral-900 rounded-2xl p-6 md:p-8 border border-neutral-800 flex flex-col gap-4">
-            <div className="flex items-center gap-3 text-left">
-              <div className="bg-yellow-500/15 p-3 rounded-xl">
-                <Sparkles className="w-6 h-6 text-yellow-400" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-white">
-                  What Counts as High-Impact?
-                </h2>
-                <p className="text-sm text-gray-400">
-                  Simple rule: it either ships something real, gets real
-                  feedback, or builds a real relationship.
-                </p>
-              </div>
+          {totalItems > 0 && (
+            <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-emerald-500"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
             </div>
-
-            <ul className="text-sm text-gray-300 space-y-2 text-left">
-              <li>• Ships something users or buyers can actually see.</li>
-              <li>• Creates or deepens a relationship with a key person.</li>
-              <li>• Removes a painful blocker or bug for real users.</li>
-              <li>• Gives you honest feedback from the right people.</li>
-            </ul>
-
-            <div className="mt-2 flex-1 flex items-center justify-center">
-              <div className="bg-neutral-800/60 rounded-xl p-3 border border-neutral-700 w-full">
-                <img
-                  src={inspirationImage}
-                  alt="Design Inspiration"
-                  className="w-full h-auto rounded-lg shadow-lg"
-                />
-              </div>
-            </div>
-          </div>
+          )}
         </motion.div>
 
-        {/* Per-project: concrete high-impact items */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.05 }}
-          className="grid gap-6 md:grid-cols-3"
-        >
-          {projectConfigs.map((project) => {
+        {/* Visitor analytics */}
+        <VisitorAnalytics />
+
+        {/* Project task columns */}
+        <div className="grid gap-5 md:grid-cols-3">
+          {projectConfigs.map((project, idx) => {
             const Icon = project.icon;
             const items = projectItems[project.id] || [];
+            const active = items.filter((i) => !i.completed);
+            const done = items.filter((i) => i.completed);
+            const projectDone = done.length;
+            const projectTotal = items.length;
+
             return (
-              <div
+              <motion.div
                 key={project.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.06 }}
                 className="bg-neutral-900 rounded-2xl p-5 border border-neutral-800 flex flex-col text-left"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`${project.bg} p-2.5 rounded-xl`}>
-                    <Icon className={`w-5 h-5 ${project.color}`} />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white">
+                {/* Project header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`${project.bg} p-2 rounded-lg`}>
+                      <Icon className={`w-4 h-4 ${project.color}`} />
+                    </div>
+                    <h3 className="text-base font-semibold text-white">
                       {project.name}
                     </h3>
-                    <p className="text-xs uppercase tracking-wide text-gray-500">
-                      High-impact this week
-                    </p>
                   </div>
-                  <button
-                    onClick={() => startAdding(project.id)}
-                    className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
-                    title="Add item"
-                  >
-                    <Plus className="w-4 h-4 text-gray-300" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {projectTotal > 0 && (
+                      <span className="text-xs text-gray-500">
+                        {projectDone}/{projectTotal}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => startAdding(project.id)}
+                      className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                      title="Add task"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-400 mb-3">
-                  {project.description}
-                </p>
 
-                {/* Add new item form */}
+                {/* Add form */}
                 {addingToProject === project.id && (
                   <div className="mb-3 p-3 bg-neutral-800/60 rounded-lg border border-neutral-700">
                     <textarea
                       value={newItemText}
                       onChange={(e) => setNewItemText(e.target.value)}
-                      placeholder="Enter new item..."
-                      className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500"
+                      placeholder="What needs to happen?"
+                      className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500 resize-none"
                       rows="2"
                       autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddItem(project.id);
+                        }
+                      }}
                     />
                     <div className="flex gap-2">
                       <button
@@ -426,18 +382,24 @@ const LoggedInView = ({
                   </div>
                 )}
 
-                {/* Items list */}
-                <ul className="space-y-2 text-sm text-gray-300 flex-1">
-                  {items.map((item) => (
+                {/* Active tasks */}
+                <ul className="space-y-1 flex-1">
+                  {active.map((item) => (
                     <li key={item.id} className="group">
                       {editingItem?.id === item.id ? (
                         <div className="p-2 bg-neutral-800/60 rounded-lg border border-neutral-700">
                           <textarea
                             value={editItemText}
                             onChange={(e) => setEditItemText(e.target.value)}
-                            className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-neutral-900 text-gray-200 text-sm rounded p-2 mb-2 border border-neutral-700 focus:outline-none focus:border-emerald-500 resize-none"
                             rows="2"
                             autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleEditItem(item.id, project.id);
+                              }
+                            }}
                           />
                           <div className="flex gap-2">
                             <button
@@ -459,41 +421,93 @@ const LoggedInView = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="flex gap-2 items-start">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                          <span className="flex-1">{item.text}</span>
+                        <div className="flex items-start gap-2.5 py-1.5 rounded-lg px-1 -mx-1 hover:bg-neutral-800/40 transition-colors">
+                          <button
+                            onClick={() =>
+                              handleToggleComplete(item.id, project.id)
+                            }
+                            className="mt-0.5 flex-shrink-0"
+                          >
+                            <Circle className="w-[18px] h-[18px] text-gray-600 hover:text-emerald-400 transition-colors" />
+                          </button>
+                          <span className="text-sm text-gray-200 flex-1 leading-snug">
+                            {item.text}
+                          </span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => startEditing(item, project.id)}
-                              className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                              className="p-1 rounded hover:bg-neutral-700 transition-colors"
                               title="Edit"
                             >
-                              <Edit2 className="w-3 h-3 text-blue-400" />
+                              <Edit2 className="w-3 h-3 text-gray-500 hover:text-blue-400" />
                             </button>
                             <button
                               onClick={() =>
                                 handleDeleteItem(item.id, project.id)
                               }
-                              className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                              className="p-1 rounded hover:bg-neutral-700 transition-colors"
                               title="Delete"
                             >
-                              <Trash2 className="w-3 h-3 text-red-400" />
+                              <Trash2 className="w-3 h-3 text-gray-500 hover:text-red-400" />
                             </button>
                           </div>
                         </div>
                       )}
                     </li>
                   ))}
-                  {items.length === 0 && addingToProject !== project.id && (
-                    <li className="text-gray-500 italic text-center py-4">
-                      No items yet. Click + to add one.
-                    </li>
-                  )}
                 </ul>
-              </div>
+
+                {/* Completed tasks */}
+                {done.length > 0 && (
+                  <>
+                    <div className="border-t border-neutral-800 mt-3 pt-2">
+                      <p className="text-[11px] uppercase tracking-wider text-gray-600 mb-1 px-1">
+                        Done
+                      </p>
+                    </div>
+                    <ul className="space-y-0.5">
+                      {done.map((item) => (
+                        <li key={item.id} className="group">
+                          <div className="flex items-start gap-2.5 py-1 rounded-lg px-1 -mx-1 hover:bg-neutral-800/40 transition-colors">
+                            <button
+                              onClick={() =>
+                                handleToggleComplete(item.id, project.id)
+                              }
+                              className="mt-0.5 flex-shrink-0"
+                            >
+                              <CheckCircle2 className={`w-[18px] h-[18px] ${project.check} opacity-70`} />
+                            </button>
+                            <span className="text-sm text-gray-500 line-through flex-1 leading-snug">
+                              {item.text}
+                            </span>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() =>
+                                  handleDeleteItem(item.id, project.id)
+                                }
+                                className="p-1 rounded hover:bg-neutral-700 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3 h-3 text-gray-600 hover:text-red-400" />
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {/* Empty state */}
+                {items.length === 0 && addingToProject !== project.id && (
+                  <p className="text-gray-600 text-sm text-center py-6 italic">
+                    Nothing here yet
+                  </p>
+                )}
+              </motion.div>
             );
           })}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

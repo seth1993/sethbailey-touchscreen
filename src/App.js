@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { analytics, auth } from './firebase';
 import { logEvent } from 'firebase/analytics';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { logVisit } from './visitTracker';
 import AuthForm from './components/AuthForm';
 import LoggedInView from './components/LoggedInView';
 import PublicView from './components/PublicView';
@@ -26,7 +27,12 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
-      
+
+      // Record public visits (skips your own logged-in sessions)
+      if (!currentUser) {
+        logVisit();
+      }
+
       if (currentUser && analytics) {
         logEvent(analytics, 'login', {
           method: 'firebase'
