@@ -21,7 +21,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build", 
-    "test": "react-scripts test",
+    "test": "TZ=Europe/Berlin react-scripts test",
     "eject": "react-scripts eject",
     "functions:dev": "firebase emulators:start --only functions",
     "functions:deploy": "firebase deploy --only functions",
