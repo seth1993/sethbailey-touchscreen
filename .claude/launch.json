@@ -2,9 +2,15 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "touchscreen-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "port": 3000
+    },
+    {
       "name": "build-preview",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-s", "build", "-l", "4173"],
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4173", "--directory", "build"],
       "port": 4173
     }
   ]

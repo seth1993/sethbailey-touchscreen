@@ -14,6 +14,7 @@ import {
   X,
   Save,
   Flame,
+  LayoutGrid,
 } from "lucide-react";
 import { db } from "../firebase";
 import {
@@ -27,6 +28,8 @@ import {
   orderBy,
 } from "firebase/firestore";
 import VisitorAnalytics from "./VisitorAnalytics";
+import SiteAnalytics from "./SiteAnalytics";
+import MarketingBoard from "./MarketingBoard";
 
 const PLANFUL_SEED_TASKS = [
   "Work on userflow",
@@ -37,6 +40,8 @@ const PLANFUL_SEED_TASKS = [
 ];
 
 const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
+  // The marketing board is the default surface — tasks live one click away.
+  const [view, setView] = useState("board");
   const [projectItems, setProjectItems] = useState({
     bidfolder: [],
     planful: [],
@@ -229,6 +234,16 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
     },
   ];
 
+  if (view === "board") {
+    return (
+      <MarketingBoard
+        onLogout={onLogout}
+        onToggleView={onToggleView}
+        onOpenTasks={() => setView("tasks")}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black">
       {/* Header */}
@@ -238,6 +253,13 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
             Tasks &amp; Thoughts
           </h1>
           <div className="flex gap-3">
+            <button
+              onClick={() => setView("board")}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Board
+            </button>
             <button
               onClick={onToggleView}
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
@@ -298,6 +320,9 @@ const LoggedInView = ({ onLogout, onToggleView, showPublicView }) => {
             </div>
           )}
         </motion.div>
+
+        {/* GA4 reporting */}
+        <SiteAnalytics />
 
         {/* Visitor analytics */}
         <VisitorAnalytics />

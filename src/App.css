@@ -40,3 +40,12 @@
     transform: rotate(360deg);
   }
 }
+
+/* Horizontal showcase strips: scrollable without a visible scrollbar */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

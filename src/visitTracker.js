@@ -30,7 +30,10 @@ const getReferrerLabel = () => {
 };
 
 // Logs one visit per browser session to the "visits" collection.
-export const logVisit = async () => {
+// `site` tags the visit so the marketing board can split traffic per app —
+// any other app pointed at this Firebase project just passes its own slug
+// from src/marketing/projects.js.
+export const logVisit = async (site = "portfolio") => {
   if (typeof window === "undefined") return;
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") return;
   if (sessionStorage.getItem(SESSION_KEY)) return;
@@ -38,6 +41,7 @@ export const logVisit = async () => {
   try {
     const ua = navigator.userAgent;
     await addDoc(collection(db, "visits"), {
+      site,
       timestamp: serverTimestamp(),
       path: window.location.pathname,
       referrer: getReferrerLabel(),

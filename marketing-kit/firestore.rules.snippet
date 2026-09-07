@@ -1,0 +1,28 @@
+// MERGE these into sethbaileydev-84a1e's rules in the Firebase console.
+// This is a fragment, not a complete ruleset — pasting it wholesale would
+// remove the read rules the board and logged-in dashboard rely on.
+//
+// Create-only, shape-validated, no read/update/delete for anonymous clients:
+// a leaked config lets someone inflate a counter, nothing more.
+
+function validSite() {
+  return request.resource.data.site is string
+      && request.resource.data.site.size() > 0
+      && request.resource.data.site.size() < 40;
+}
+
+match /visits/{id} {
+  allow create: if validSite()
+    && request.resource.data.timestamp == request.time
+    && request.resource.data.keys().hasOnly([
+         "site", "timestamp", "path", "referrer",
+         "device", "browser", "language", "timezone", "screen"
+       ]);
+  // reads stay restricted to your existing signed-in condition
+}
+
+match /conversions/{id} {
+  allow create: if validSite()
+    && request.resource.data.timestamp == request.time
+    && request.resource.data.type is string;
+}

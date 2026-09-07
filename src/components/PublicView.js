@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Code, Zap, Send, TrendingUp, Menu, X, ArrowRight, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { Code, Zap, Send, TrendingUp, Menu, X, ArrowRight, ExternalLink, CheckCircle, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import plane from '../plane.png';
 import { analytics } from '../firebase';
 import { logEvent } from 'firebase/analytics';
@@ -14,6 +14,40 @@ const projects = [
     owner: "Design",
     image: "/strike.png",
     url: "https://fusion.strikeusa.com",
+    // Rendered as the horizontal "Inside Strike Fusion" strip under the card.
+    // Missing images fall back to a numbered tile — see public/fusion/README.txt.
+    showcase: [
+      {
+        image: "/strike.png",
+        title: "One-click sign in",
+        text: "Microsoft SSO puts your whole team inside Fusion without a new password to manage."
+      },
+      {
+        image: "/fusion/02-dashboard.png",
+        title: "Every job in one view",
+        text: "A live portfolio of active projects with budget health at a glance."
+      },
+      {
+        image: "/fusion/03-estimate.png",
+        title: "Estimates built from real history",
+        text: "Line items priced against your past jobs, not gut feel or last year's spreadsheet."
+      },
+      {
+        image: "/fusion/04-forecast.png",
+        title: "Costs projected forward",
+        text: "Material pricing, labor trends, and scope changes rolled into a running forecast."
+      },
+      {
+        image: "/fusion/05-variance.png",
+        title: "Variance the day it happens",
+        text: "Budget versus actual tracked continuously, so overruns surface early, not at closeout."
+      },
+      {
+        image: "/fusion/06-reports.png",
+        title: "Reports the owner can read",
+        text: "Export clean cost and margin summaries for owners, lenders, and project reviews."
+      }
+    ],
     metrics: {
       monthlyTraffic: "2.4K",
       conversionRate: "3.2%",
@@ -398,7 +432,166 @@ function ProjectCard({ project, index, isReversed }) {
           )}
         </div>
       </div>
+
+      {project.showcase && project.showcase.length > 0 && (
+        <ProjectShowcase items={project.showcase} name={project.name} />
+      )}
     </motion.div>
+  );
+}
+
+function ProjectShowcase({ items, name }) {
+  const scrollerRef = useRef(null);
+  const [active, setActive] = useState(0);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  const frameStep = () => {
+    const el = scrollerRef.current;
+    if (!el) return 0;
+    const frame = el.querySelector('[data-frame]');
+    return frame ? frame.offsetWidth + 24 : el.clientWidth * 0.8;
+  };
+
+  // The strip shows ~2.5 frames at a time, so max scroll is reached well before
+  // scrollLeft equals lastIndex * step — snap the active frame to the end there.
+  const handleScroll = () => {
+    const el = scrollerRef.current;
+    const step = frameStep();
+    if (!el || !step) return;
+
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 1) {
+      setActive(0);
+      setAtStart(true);
+      setAtEnd(true);
+      return;
+    }
+
+    const end = el.scrollLeft >= max - 2;
+    setAtStart(el.scrollLeft <= 2);
+    setAtEnd(end);
+    setActive(
+      end
+        ? items.length - 1
+        : Math.min(items.length - 1, Math.max(0, Math.round(el.scrollLeft / step)))
+    );
+  };
+
+  const nudge = (dir) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * frameStep(), behavior: 'smooth' });
+  };
+
+  const goTo = (i) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: i * frameStep(), behavior: 'smooth' });
+  };
+
+  return (
+    <div className="border-t border-white/5 px-8 lg:px-14 py-10 lg:py-12">
+      <div className="flex items-end justify-between gap-6 mb-8">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.3em] text-sky-400/90 mb-2">
+            Inside {name}
+          </p>
+          <h3 className="text-xl lg:text-2xl font-light tracking-tight text-white">
+            How it works, step by step
+          </h3>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => nudge(-1)}
+            disabled={atStart}
+            aria-label="Previous"
+            className="p-2 rounded-full border border-white/10 text-gray-400 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:border-white/10 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => nudge(1)}
+            disabled={atEnd}
+            aria-label="Next"
+            className="p-2 rounded-full border border-white/10 text-gray-400 hover:text-white hover:border-white/25 disabled:opacity-30 disabled:hover:text-gray-400 disabled:hover:border-white/10 transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="no-scrollbar flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth -mr-8 lg:-mr-14 pr-8 lg:pr-14 pb-1"
+      >
+        {items.map((item, i) => (
+          <motion.div
+            key={item.title}
+            data-frame
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.5, delay: Math.min(i, 3) * 0.06 }}
+            className="snap-start shrink-0 w-[78vw] sm:w-[360px] lg:w-[400px]"
+          >
+            <ShowcaseFrame src={item.image} alt={`${name} — ${item.title}`} step={i + 1} />
+            <div className="mt-5 flex items-start gap-3">
+              <span className="mt-[3px] text-[11px] font-mono text-sky-400/70">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <div>
+                <h4 className="text-base font-medium text-white mb-1.5">{item.title}</h4>
+                <p className="text-sm text-gray-500 leading-relaxed">{item.text}</p>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 mt-8">
+        {items.map((item, i) => (
+          <button
+            key={item.title}
+            type="button"
+            onClick={() => goTo(i)}
+            aria-label={`Go to ${item.title}`}
+            className={`h-1 rounded-full transition-all duration-300 ${
+              i === active ? 'w-8 bg-sky-400' : 'w-4 bg-white/15 hover:bg-white/30'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ShowcaseFrame({ src, alt, step }) {
+  const [failed, setFailed] = useState(!src);
+
+  return (
+    <div className="relative aspect-[16/10] rounded-2xl overflow-hidden bg-neutral-950 border border-white/10">
+      {failed ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-sky-500/10 via-neutral-900 to-indigo-500/10">
+          <span className="text-5xl font-mono font-light text-white/10">
+            {String(step).padStart(2, '0')}
+          </span>
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 w-full h-full object-cover object-top"
+        />
+      )}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-950/40 to-transparent" />
+    </div>
   );
 }
 
