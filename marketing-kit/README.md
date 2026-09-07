@@ -53,14 +53,22 @@ Firebase console — do not paste it as the whole file, or you will drop the rea
 rules the board and the logged-in dashboard depend on.
 
 Until the rules allow it, every write fails with `permission-denied` (visible in
-the browser console as "Error logging visit") and the cards stay on NO FEED.
+the browser console as "Error logging visit") and no first-party rows land.
+
+Note this kit is now the *second* way onto the board. If the app already has a
+GA4 property, mapping it in `GA4_PROPERTIES` and granting the service account
+Viewer lights the card up with history, with no code in this app at all. Install
+this kit when you want conversions, or first-party numbers you own outright.
 
 ## What happens next
 
-Nothing else to change. The board flips a card to LIVE the moment any row lands,
-via `reporting: project.tracking || hasAnyData` in `useMarketingData.js` — the
-`tracking: false` flags in `projects.js` do not need editing, though setting one
-to `true` is the honest move once a site is genuinely wired.
+Nothing else to change. The board flips a card to LIVE the moment any row lands
+— `reporting` in `useMarketingData.js` is just "did any source feed this card".
+The `tracking: false` flags in `projects.js` do not need editing, though setting
+one to `true` is the honest move once a site is genuinely wired.
+
+A card already reading `live · ga` will keep showing GA sessions; first-party
+rows still land and still drive its conversion numerator.
 
 Two caveats worth stating plainly:
 

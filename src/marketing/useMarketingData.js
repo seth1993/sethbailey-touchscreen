@@ -10,6 +10,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { PROJECTS } from "./projects";
+import { useBoardTraffic } from "./useBoardTraffic";
 
 // How far back we pull. 30-day windows compared against the prior 30 days
 // need 60, plus a little slack for timezone edges.
@@ -28,7 +29,33 @@ const addDays = (d, n) => {
   next.setDate(next.getDate() + n);
   return next;
 };
-const dayKey = (d) => startOfDay(d).toISOString().slice(0, 10);
+const dayKey = (d) => {
+  const day = startOfDay(d);
+  const month = `${day.getMonth() + 1}`.padStart(2, "0");
+  const date = `${day.getDate()}`.padStart(2, "0");
+  return `${day.getFullYear()}-${month}-${date}`;
+};
+
+// GA4 traffic for one site, or null if that property isn't reporting to us.
+const gaFeedFor = (traffic, site) => {
+  const feed = traffic?.sites?.[site];
+  return feed && feed.status === "ok" ? feed : null;
+};
+
+const gaDayMap = (feed) => {
+  const byDay = new Map();
+  feed.daily.forEach((row) => byDay.set(row.date, row.sessions));
+  return byDay;
+};
+
+// Windows are day-aligned, so summing day keys is exact.
+const sumDays = (byDay, from, to) => {
+  let total = 0;
+  for (let d = from; d < to; d = addDays(d, 1)) {
+    total += byDay.get(dayKey(d)) || 0;
+  }
+  return total;
+};
 
 // A collection that doesn't exist yet, or one the rules don't allow, must not
 // take the whole board down — each source fails on its own.
@@ -130,7 +157,11 @@ export const useMarketingData = (demo = false) => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [errors, setErrors] = useState([]);
 
-  const refresh = useCallback(async () => {
+  // GA4 is the traffic source wherever a property is shared with us. Demo mode
+  // must never touch it -- generated numbers and real ones cannot share a card.
+  const ga = useBoardTraffic(!demo);
+
+  const loadFirestore = useCallback(async () => {
     if (demo) {
       const rows = buildDemoRows();
       setVisits(rows.visits);
@@ -161,12 +192,20 @@ export const useMarketingData = (demo = false) => {
     setLoading(false);
   }, [demo]);
 
+  // The refresh button should mean "everything", not just Firestore.
+  const gaRefresh = ga.refresh;
+  const refresh = useCallback(() => {
+    loadFirestore();
+    if (!demo) gaRefresh();
+  }, [loadFirestore, gaRefresh, demo]);
+
   useEffect(() => {
-    refresh();
+    loadFirestore();
     // Board is meant to sit on a TV all day — keep it current on its own.
-    const id = setInterval(refresh, 5 * 60 * 1000);
+    // (GA runs its own timer inside useBoardTraffic.)
+    const id = setInterval(loadFirestore, 5 * 60 * 1000);
     return () => clearInterval(id);
-  }, [refresh]);
+  }, [loadFirestore]);
 
   const buildStats = useCallback(
     (periodKey) => {
@@ -182,30 +221,59 @@ export const useMarketingData = (demo = false) => {
         const c = pick(conversions);
         const o = pick(outreach);
 
-        const visitsNow = countIn(v, currentFrom, currentTo);
-        const visitsPrev = countIn(v, prevFrom, currentFrom);
+        // GA4 wins for traffic when the property reports; Firestore is the
+        // fallback, and stays the only source for conversions and outreach.
+        const gaFeed = demo ? null : gaFeedFor(ga.traffic, project.site);
+        const gaDays = gaFeed ? gaDayMap(gaFeed) : null;
+
+        const visitsNow = gaDays
+          ? sumDays(gaDays, currentFrom, currentTo)
+          : countIn(v, currentFrom, currentTo);
+        const visitsPrev = gaDays
+          ? sumDays(gaDays, prevFrom, currentFrom)
+          : countIn(v, prevFrom, currentFrom);
         const convNow = countIn(c, currentFrom, currentTo);
         const convPrev = countIn(c, prevFrom, currentFrom);
         const outNow = countIn(o, currentFrom, currentTo);
         const outPrev = countIn(o, prevFrom, currentFrom);
 
+        // Conversions are first-party even when visits are GA sessions, so on
+        // a GA-fed card this rate spans two sources by design.
         const rateNow = visitsNow > 0 ? (convNow / visitsNow) * 100 : 0;
         const ratePrev = visitsPrev > 0 ? (convPrev / visitsPrev) * 100 : 0;
 
         // Daily series for the sparkline, oldest first.
         const buckets = new Map();
         for (let i = SPARK_DAYS - 1; i >= 0; i--) buckets.set(dayKey(addDays(today, -i)), 0);
-        v.forEach((row) => {
-          const key = dayKey(row.date);
-          if (buckets.has(key)) buckets.set(key, buckets.get(key) + 1);
-        });
+        if (gaDays) {
+          buckets.forEach((_, key) => buckets.set(key, gaDays.get(key) || 0));
+        } else {
+          v.forEach((row) => {
+            const key = dayKey(row.date);
+            if (buckets.has(key)) buckets.set(key, buckets.get(key) + 1);
+          });
+        }
         const spark = Array.from(buckets.values());
 
         const hasAnyData = v.length > 0 || c.length > 0 || o.length > 0;
+        const firstParty = project.tracking || hasAnyData;
+
+        // Why a card looks the way it does, so the UI can say so rather than
+        // showing an unexplained zero: which source fed it, and if none did,
+        // what is missing.
+        const gaStatus = demo ? null : ga.traffic?.sites?.[project.site]?.status || null;
+        const feed = {
+          source: gaDays ? "ga4" : firstParty ? "firestore" : null,
+          status: gaStatus,
+          propertyId: ga.traffic?.sites?.[project.site]?.propertyId || null,
+          error: ga.traffic?.sites?.[project.site]?.error || null,
+          realtimeUsers: gaFeed ? gaFeed.realtimeUsers : null,
+        };
 
         return {
           ...project,
-          reporting: project.tracking || hasAnyData,
+          feed,
+          reporting: Boolean(feed.source),
           visits: { now: visitsNow, prev: visitsPrev, ...variance(visitsNow, visitsPrev) },
           conversions: { now: convNow, prev: convPrev, ...variance(convNow, convPrev) },
           conversionRate: {
@@ -250,11 +318,23 @@ export const useMarketingData = (demo = false) => {
         },
       };
     },
-    [visits, conversions, outreach]
+    [visits, conversions, outreach, ga.traffic, demo]
   );
 
   return useMemo(
-    () => ({ loading, errors, lastUpdated, refresh, buildStats, rawVisits: visits }),
-    [loading, errors, lastUpdated, refresh, buildStats, visits]
+    () => ({
+      loading,
+      errors,
+      lastUpdated,
+      refresh,
+      buildStats,
+      rawVisits: visits,
+      gaError: ga.error,
+      gaLoading: ga.loading,
+      // Properties GA has but that were never shared with the function.
+      needsAccess: ga.needsAccess,
+      serviceAccount: ga.traffic?.serviceAccount || null,
+    }),
+    [loading, errors, lastUpdated, refresh, buildStats, visits, ga.error, ga.loading, ga.needsAccess, ga.traffic]
   );
 };

@@ -139,7 +139,7 @@ const VarianceChip = ({ pct, isNew, points, suffix = "%", size = "md" }) => {
 /* Project card                                                        */
 /* ------------------------------------------------------------------ */
 
-export const ProjectCard = ({ project, spotlight, tv, onLogOutreach }) => {
+const ProjectCard = ({ project, spotlight, tv, onLogOutreach }) => {
   const [imgOk, setImgOk] = useState(true);
 
   const width = tv ? 420 : 330;

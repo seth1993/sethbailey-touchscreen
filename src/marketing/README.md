@@ -4,10 +4,43 @@ The signed-in default view (`components/MarketingBoard.js`) is a TV dashboard:
 per-project traffic, conversion, and outreach volume, each against the previous
 equal-length period.
 
+## Where the numbers come from
+
+Two sources, and a card says which one it is using:
+
+| Badge       | Source                                                            |
+| ----------- | ----------------------------------------------------------------- |
+| `live · ga` | GA4 sessions, via the `getBoardTraffic` function                   |
+| `live`      | First-party `visits` rows written by `logVisit()`                  |
+| `no access` | A GA4 property is mapped but was never shared with the dashboard   |
+| `no feed`   | No GA4 property mapped and nothing first-party has ever arrived    |
+
+GA4 wins for traffic wherever the property is readable, because it needs no
+code in the other app and it brings history with it. Conversions and outreach
+are always first-party — GA has no idea what counts as a conversion here. On a
+GA-fed card the conversion *rate* therefore spans both sources by design.
+
+`getBoardTraffic` returns a 64-day daily series per property rather than a
+total, so switching period (today / week / month) is arithmetic in the browser,
+not another round trip. One property failing never blanks the board — it comes
+back as a status beside the ones that worked.
+
+### Granting GA access
+
+Every property needs its own grant: GA Admin → Property Access Management → add
+`302446346986-compute@developer.gserviceaccount.com` as a Viewer. The slug →
+property map lives in `functions/index.js` (`GA4_PROPERTIES`), deliberately
+server-side: the browser sends a slug, never a raw property id.
+
+Until a property is granted, the board names it in an amber banner and the card
+falls back to first-party visits.
+
 ## Wiring a project in
 
 1. Add it to `projects.js` with a unique `site` slug.
-2. From that app, report into this same Firebase project:
+2. Map its GA4 property in `GA4_PROPERTIES` (`functions/index.js`) and grant the
+   service account Viewer on it — that alone is enough to light the card up.
+3. Optionally, for conversions and outreach, report into this Firebase project:
 
 ```js
 import { logVisit } from "./visitTracker";      // one visit per browser session
@@ -18,8 +51,9 @@ logConversion("planful", "signup");             // conversion numerator
 logOutreach("planful", "LinkedIn");             // posts sent
 ```
 
-3. Flip `tracking: true` on that project once the feed is live. Until then the
-   card shows "no feed" rather than a misleading zero.
+4. Flip `tracking: true` on that project once a first-party feed is live. Until
+   something reports, the card names what is missing rather than showing a
+   misleading zero.
 
 Outreach can also be logged by hand from the board — the `+` on any card.
 
