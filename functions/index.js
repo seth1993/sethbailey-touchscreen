@@ -157,6 +157,11 @@ exports.sendContactEmail = onRequest({
 
 const GA4_PROPERTY_ID = process.env.GA4_PROPERTY_ID;
 
+// Gen 2 runtime identity. The board quotes this back to you when a property
+// has not been shared, so it lives in one place rather than in prose.
+const RUNTIME_SERVICE_ACCOUNT =
+    "302446346986-compute@developer.gserviceaccount.com";
+
 // Marketing-board slug (src/marketing/projects.js) -> numeric GA4 property id.
 //
 // GA property names do not match the slugs -- "tracky-c4189" is Planful,
@@ -385,9 +390,9 @@ exports.getAnalyticsReport = onRequest({
     if (error.code === 7 || /PERMISSION_DENIED/.test(error.message || "")) {
       return res.status(403).json({
         error: `No access to the GA4 property for "${site}" (${propertyId}).`,
-        details: "Grant 302446346986-compute@developer.gserviceaccount.com " +
-                 "Viewer access on that property in GA Admin -> Property " +
-                 "Access Management. Each property needs its own grant."
+        details: `Grant ${RUNTIME_SERVICE_ACCOUNT} Viewer access on that ` +
+                 "property in GA Admin -> Property Access Management. " +
+                 "Each property needs its own grant."
       });
     }
 
@@ -396,4 +401,146 @@ exports.getAnalyticsReport = onRequest({
       details: process.env.NODE_ENV === "development" ? error.message : undefined
     });
   }
+});
+
+
+// ---------------------------------------------------------------------------
+// Board traffic
+//
+// getAnalyticsReport answers for one site at a time, which is the wrong shape
+// for the marketing board -- it needs every card at once, and it must not go
+// dark because one property was never shared. So this returns a per-property
+// daily series and lets the browser cut its own windows out of it:
+//
+//   - one call per refresh instead of one per card per period switch
+//   - changing period (today / week / month) costs nothing, no refetch
+//   - a property that fails comes back as a named status next to the ones
+//     that worked, never as a failed response
+//
+// Sessions, not users -- that is what logVisit() counts on the first-party
+// side, so the two sources mean the same thing when a card falls back.
+// ---------------------------------------------------------------------------
+
+// Matches LOOKBACK_DAYS in src/marketing/useMarketingData.js: 30-day windows
+// against the prior 30 need 60, plus slack for timezone edges.
+const BOARD_LOOKBACK_DAYS = 64;
+
+// GA is billed per request and the board sits on a TV refreshing itself, so
+// hold the answer briefly. Well under the 5-minute client refresh, so a manual
+// refresh still feels live, but a wall of open tabs costs one fetch.
+const BOARD_CACHE_MS = 120 * 1000;
+let boardCache = null;
+
+const fetchPropertyTraffic = async (client, propertyId, days) => {
+  const property = `properties/${propertyId}`;
+
+  const [response] = await client.runReport({
+    property,
+    dateRanges: [{startDate: `${days}daysAgo`, endDate: "today"}],
+    dimensions: [{name: "date"}],
+    metrics: [{name: "sessions"}, {name: "activeUsers"}],
+    orderBys: [{dimension: {dimensionName: "date"}}],
+    limit: days + 2
+  });
+
+  // Realtime is a different endpoint with its own quota. It is the "live" in
+  // live feed, but a card is still worth showing without it.
+  let realtimeUsers = null;
+  try {
+    const [realtime] = await client.runRealtimeReport({
+      property,
+      metrics: [{name: "activeUsers"}]
+    });
+    realtimeUsers = Number(realtime.rows?.[0]?.metricValues?.[0]?.value || 0);
+  } catch (err) {
+    logger.warn("Realtime unavailable", {propertyId, error: err.message});
+  }
+
+  return {
+    status: "ok",
+    propertyId,
+    realtimeUsers,
+    daily: (response.rows || []).map((row) => ({
+      date: parseGaDate(row.dimensionValues[0].value),
+      sessions: Number(row.metricValues[0]?.value || 0),
+      users: Number(row.metricValues[1]?.value || 0)
+    }))
+  };
+};
+
+exports.getBoardTraffic = onRequest({
+  cors: {
+    origin: CORS_ORIGINS,
+    methods: ["GET", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  }
+}, async (req, res) => {
+  if (req.method !== "GET") {
+    return res.status(405).json({error: "Method not allowed"});
+  }
+
+  try {
+    await requireAnalyticsReader(req);
+  } catch (err) {
+    logger.warn("Rejected board traffic request", {reason: err.message});
+    return res.status(err.status || 401).json({error: err.message});
+  }
+
+  const requestedDays = Number(req.query.days);
+  const days = Number.isFinite(requestedDays)
+      ? Math.min(Math.max(Math.trunc(requestedDays), 1), 365)
+      : BOARD_LOOKBACK_DAYS;
+
+  if (boardCache && boardCache.days === days &&
+      Date.now() - boardCache.at < BOARD_CACHE_MS) {
+    return res.status(200).json({...boardCache.payload, cached: true});
+  }
+
+  const client = getAnalyticsClient();
+  const slugs = Object.keys(GA4_PROPERTIES);
+
+  // allSettled, not all: one unshared property must not blank the board.
+  const settled = await Promise.allSettled(
+      slugs.map((slug) =>
+        fetchPropertyTraffic(client, GA4_PROPERTIES[slug], days))
+  );
+
+  const sites = {};
+  settled.forEach((result, i) => {
+    const slug = slugs[i];
+    const propertyId = GA4_PROPERTIES[slug];
+
+    if (result.status === "fulfilled") {
+      sites[slug] = result.value;
+      return;
+    }
+
+    const error = result.reason || {};
+    const denied = error.code === 7 ||
+        /PERMISSION_DENIED/.test(error.message || "");
+
+    logger.warn("Board traffic failed for one property", {
+      slug, propertyId, code: error.code, error: error.message
+    });
+
+    sites[slug] = {
+      status: denied ? "no_access" : "error",
+      propertyId,
+      // The browser renders this verbatim, so say what to actually do.
+      error: denied
+          ? `Share GA4 property ${propertyId} with ${RUNTIME_SERVICE_ACCOUNT} ` +
+            "(Viewer) in GA Admin -> Property Access Management."
+          : error.message || "Unknown error"
+    };
+  });
+
+  const payload = {
+    fetchedAt: new Date().toISOString(),
+    lookbackDays: days,
+    serviceAccount: RUNTIME_SERVICE_ACCOUNT,
+    sites
+  };
+
+  boardCache = {days, at: Date.now(), payload};
+  return res.status(200).json(payload);
 });

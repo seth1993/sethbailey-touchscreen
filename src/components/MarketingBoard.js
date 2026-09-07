@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   ExternalLink,
@@ -11,6 +12,7 @@ import {
   Minimize2,
   Plus,
   RefreshCw,
+  Radio,
   Sparkles,
   Tv,
   FlaskConical,
@@ -22,6 +24,25 @@ import { OUTREACH_CHANNELS } from "../marketing/projects";
 import { logOutreach } from "../marketing/report";
 
 const SPOTLIGHT_MS = 9000;
+
+// A card is only ever in one of these states, and each one says something
+// different about what to go do — so the badge names the source rather than
+// collapsing everything into live/not-live.
+const feedBadge = (feed = {}) => {
+  if (feed.source === "ga4") {
+    return { label: "live · ga", Icon: Wifi, tone: "text-emerald-300 border-emerald-500/30 bg-emerald-500/15" };
+  }
+  if (feed.source === "firestore") {
+    return { label: "live", Icon: Wifi, tone: "text-emerald-300 border-emerald-500/30 bg-emerald-500/15" };
+  }
+  if (feed.status === "no_access") {
+    return { label: "no access", Icon: AlertTriangle, tone: "text-amber-300 border-amber-500/30 bg-amber-500/15" };
+  }
+  if (feed.status === "error") {
+    return { label: "ga error", Icon: AlertTriangle, tone: "text-amber-300 border-amber-500/30 bg-amber-500/15" };
+  }
+  return { label: "no feed", Icon: WifiOff, tone: "text-neutral-400 border-neutral-700 bg-black/60" };
+};
 
 /* ------------------------------------------------------------------ */
 /* Small pieces                                                        */
@@ -118,10 +139,12 @@ const VarianceChip = ({ pct, isNew, points, suffix = "%", size = "md" }) => {
 /* Project card                                                        */
 /* ------------------------------------------------------------------ */
 
-const ProjectCard = ({ project, spotlight, tv, onLogOutreach }) => {
+export const ProjectCard = ({ project, spotlight, tv, onLogOutreach }) => {
   const [imgOk, setImgOk] = useState(true);
 
   const width = tv ? 420 : 330;
+  const badge = feedBadge(project.feed);
+  const realtime = project.feed?.realtimeUsers;
 
   return (
     <motion.div
@@ -154,15 +177,23 @@ const ProjectCard = ({ project, spotlight, tv, onLogOutreach }) => {
             onError={() => setImgOk(false)}
           />
         ) : null}
+        {project.url && (
+          <a
+            href={project.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`Visit ${project.name}`}
+            className="absolute top-2 left-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border border-neutral-700 bg-black/60 text-neutral-300 backdrop-blur-sm hover:text-white hover:border-neutral-500 hover:bg-black/80 transition-colors"
+          >
+            Visit <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
         <span
-          className={`absolute top-2 right-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border backdrop-blur-sm ${
-            project.reporting
-              ? "text-emerald-300 border-emerald-500/30 bg-emerald-500/15"
-              : "text-neutral-400 border-neutral-700 bg-black/60"
-          }`}
+          className={`absolute top-2 right-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border backdrop-blur-sm ${badge.tone}`}
+          title={project.feed?.error || undefined}
         >
-          {project.reporting ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-          {project.reporting ? "live" : "no feed"}
+          <badge.Icon className="w-3 h-3" />
+          {badge.label}
         </span>
       </div>
 
@@ -176,7 +207,18 @@ const ProjectCard = ({ project, spotlight, tv, onLogOutreach }) => {
       <div className="px-4 pt-3">
         <div className="flex items-end justify-between mb-1">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Visits</p>
+            <p className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1 flex items-center gap-2">
+              Visits
+              {realtime > 0 && (
+                <span
+                  className="flex items-center gap-1 text-emerald-400 normal-case tracking-normal"
+                  title="Active users in the last 30 minutes"
+                >
+                  <Radio className="w-3 h-3" />
+                  {realtime} now
+                </span>
+              )}
+            </p>
             <span className="text-4xl font-bold text-white tabular-nums leading-none">
               {project.visits.now.toLocaleString()}
             </span>
@@ -228,42 +270,44 @@ const ProjectCard = ({ project, spotlight, tv, onLogOutreach }) => {
         </div>
       </div>
 
-      {/* Goal + link */}
-      <div className="px-4 py-3 border-t border-neutral-800 flex items-center gap-3">
-        {project.goalPct != null && (
-          <div className="flex-1">
-            <div className="flex justify-between text-[10px] text-neutral-500 mb-1">
-              <span>Goal pace</span>
-              <span className="tabular-nums">{Math.round(project.goalPct)}%</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ backgroundColor: project.accent }}
-                initial={{ width: 0 }}
-                animate={{ width: `${project.goalPct}%` }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-              />
-            </div>
+      {/* Goal */}
+      {project.goalPct != null && (
+        <div className="px-4 py-3 border-t border-neutral-800">
+          <div className="flex justify-between text-[10px] text-neutral-500 mb-1">
+            <span>Goal pace</span>
+            <span className="tabular-nums">{Math.round(project.goalPct)}%</span>
           </div>
-        )}
-        {project.url && (
-          <a
-            href={project.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-white transition-colors flex-shrink-0"
-          >
-            Visit <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-      </div>
+          <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ backgroundColor: project.accent }}
+              initial={{ width: 0 }}
+              animate={{ width: `${project.goalPct}%` }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+            />
+          </div>
+        </div>
+      )}
 
       {!project.reporting && (
         <div className="px-4 pb-3.5">
           <p className="text-[10px] text-neutral-600 leading-relaxed">
-            Not reporting yet — call <code className="text-neutral-500">logVisit("{project.site}")</code> from
-            this app to light it up.
+            {project.feed?.status === "no_access" ? (
+              <>
+                GA4 property{" "}
+                <code className="text-amber-400/80">{project.feed.propertyId}</code> isn't shared
+                with this dashboard yet — grant the service account Viewer access in GA Admin →
+                Property Access Management.
+              </>
+            ) : project.feed?.status === "error" ? (
+              <>GA couldn't be read for this site: {project.feed.error}</>
+            ) : (
+              <>
+                No GA4 property mapped — add one in{" "}
+                <code className="text-neutral-500">functions/index.js</code>, or call{" "}
+                <code className="text-neutral-500">logVisit("{project.site}")</code> from this app.
+              </>
+            )}
           </p>
         </div>
       )}
@@ -336,7 +380,16 @@ const MarketingBoard = ({ onLogout, onToggleView, onOpenTasks }) => {
   // Demo mode is for judging the layout on the TV before real feeds exist.
   // It is always badged, and it never touches Firestore.
   const [demo, setDemo] = useState(false);
-  const { loading, errors, lastUpdated, refresh, buildStats } = useMarketingData(demo);
+  const {
+    loading,
+    errors,
+    lastUpdated,
+    refresh,
+    buildStats,
+    gaError,
+    needsAccess,
+    serviceAccount,
+  } = useMarketingData(demo);
   const [periodKey, setPeriodKey] = useState("week");
   const [tv, setTv] = useState(false);
   const [spotlight, setSpotlight] = useState(0);
@@ -516,6 +569,25 @@ const MarketingBoard = ({ onLogout, onToggleView, onOpenTasks }) => {
           <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
             Couldn't read: {errors.join(", ")}. Check the Firestore rules for those
             collections — everything else on this board is still live.
+          </div>
+        )}
+
+        {needsAccess.length > 0 && (
+          <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+            <strong className="font-semibold">
+              {needsAccess.length} GA4 {needsAccess.length === 1 ? "property is" : "properties are"} not
+              shared with this dashboard.
+            </strong>{" "}
+            In GA Admin → Property Access Management, add{" "}
+            <code className="text-amber-200">{serviceAccount}</code> as a Viewer on:{" "}
+            {needsAccess.map((a) => `${a.site} (${a.propertyId})`).join(", ")}. Each property needs its
+            own grant; those cards fall back to first-party visits until then.
+          </div>
+        )}
+
+        {gaError && (
+          <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+            Analytics feed unavailable: {gaError}. Cards are showing first-party visits only.
           </div>
         )}
 

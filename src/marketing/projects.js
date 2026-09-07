@@ -71,7 +71,7 @@ export const PROJECTS = [
     name: "ChoreVest",
     summary: "Chores kids actually finish — allowance that invests itself.",
     image: "/chorevest.png",
-    url: "https://chorevest.app",
+    url: "https://chorevest.com",
     accent: "#14b8a6",
     tracking: false,
     goals: { weeklyVisits: 400, conversionRate: 4 },
