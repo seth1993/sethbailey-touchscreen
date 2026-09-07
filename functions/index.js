@@ -8,7 +8,15 @@ const CORS_ORIGINS = [
   "https://sethbailey.dev",
   "https://www.sethbailey.dev",
   "https://sethbaileydev-84a1e.web.app",
-  "https://sethbaileydev-84a1e.firebaseapp.com"
+  "https://sethbaileydev-84a1e.firebaseapp.com",
+  // Drone services landing page (separate repo, ~/projects/drone-services).
+  // It posts leads to this same function rather than standing up a second
+  // Resend key. Vite serves it on 5173 in development.
+  "http://localhost:5173",
+  "https://bailey-aerial.web.app",
+  "https://bailey-aerial.firebaseapp.com",
+  "https://baileyaerial.com",
+  "https://www.baileyaerial.com"
 ];
 
 exports.sendContactEmail = onRequest({

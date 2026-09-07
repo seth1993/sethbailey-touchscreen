@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch)",
+      "Bash(git fetch *)",
+      "Bash(npm config get *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx firebase projects:list)",
+      "mcp__Claude_Browser__read_page",
+      "mcp__Claude_Browser__get_page_text",
+      "mcp__Claude_Browser__preview_logs",
+      "mcp__Claude_Browser__read_console_messages",
+      "mcp__Claude_Browser__find"
+    ]
+  }
+}
